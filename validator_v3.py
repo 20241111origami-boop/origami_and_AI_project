@@ -35,7 +35,6 @@ def check_maekawa_theorem(connected_edges, edges_assignment):
         elif assignment == "V":
             valley_folds += 1
     
-    # 折り線がなければ検証対象外
     if mountain_folds + valley_folds == 0:
         return True, ""
 
@@ -46,8 +45,8 @@ def check_maekawa_theorem(connected_edges, edges_assignment):
     return True, ""
 
 def check_kawasaki_theorem(connected_edges):
-    """川崎の定理を検証する。交互の角度の和がπになり、総和が2πになる"""
-    if not connected_edges or len(connected_edges) < 2:
+    """川崎の定理を検証する。"""
+    if len(connected_edges) < 2:
         return True, ""
 
     face_angles = []
@@ -62,17 +61,18 @@ def check_kawasaki_theorem(connected_edges):
         
     total_angle = sum(face_angles)
     if not math.isclose(total_angle, 2 * math.pi, rel_tol=EPSILON):
-        # これは境界上の頂点である可能性が高いため、エラーとせず、呼び出し元で判断する
-        # ただし、内側の頂点であるにも関わらず360度でない場合は問題
-        # 今回は境界判定を先に行うため、ここに来る時点で内側頂点のはず
-        msg = f"Sum of angles around the vertex is {math.degrees(total_angle):.2f} degrees, but should be 360 for an internal vertex."
+        msg = f"Sum of angles is {math.degrees(total_angle):.2f} degrees, should be 360."
         return False, msg
         
+    # === ▼▼▼ 修正箇所 ▼▼▼ ===
+    # 川崎の定理の本体：交互の角度の和が等しい（＝π）ことを厳密にチェックする
     odd_sum = sum(face_angles[i] for i in range(0, num_edges, 2))
-    if not math.isclose(odd_sum, math.pi, rel_tol=EPSILON):
-        msg = f"The sum of alternating angles is {math.degrees(odd_sum):.2f} degrees, but should be 180."
-        # 川崎の定理の厳密な定義の一つ
-        # return False, msg # 総和が360度であれば、この条件も満たされるため、エラーメッセージは総和だけで十分
+    even_sum = sum(face_angles[i] for i in range(1, num_edges, 2))
+    
+    if not math.isclose(odd_sum, even_sum, rel_tol=EPSILON):
+        msg = f"Sum of alternating angles are {math.degrees(odd_sum):.2f} and {math.degrees(even_sum):.2f}. They must be equal (and sum to 180)."
+        return False, msg
+    # === ▲▲▲ 修正完了 ▲▲▲ ===
     
     return True, ""
 
@@ -97,13 +97,12 @@ def validate_fold_file(file_path):
     for i in range(num_vertices):
         connected = get_connected_edges_and_vertices(i, edges_vertices, vertices_coords)
         
-        # === ▼▼▼ 修正箇所 ▼▼▼ ===
-        # 接続エッジに境界("B")が含まれているかチェック
-        # 含まれている場合、その頂点は境界上の頂点なので定理の検証をスキップする
         is_boundary_vertex = any(edges_assignment[e["edge_index"]] == "B" for e in connected)
         if is_boundary_vertex:
             continue
-        # === ▲▲▲ 修正完了 ▲▲▲ ===
+
+        if not connected:
+            continue
 
         # 前川の定理チェック
         is_valid, msg = check_maekawa_theorem(connected, edges_assignment)
@@ -118,10 +117,8 @@ def validate_fold_file(file_path):
     return {"valid": not errors, "errors": errors}
 
 if __name__ == "__main__":
-    # この部分はローカルでの実行を想定したサンプルコードです
-    # 実際には引数からファイルパスを受け取ります
     if len(sys.argv) != 2:
-        print("Usage: python validator_v2.py <path_to_fold_file>")
+        print("Usage: python validator_v3.py <path_to_fold_file>")
         sys.exit(1)
         
     file_path = sys.argv[1]
