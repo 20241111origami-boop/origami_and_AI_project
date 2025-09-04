@@ -1,0 +1,101 @@
+import json
+
+class OrigamiValidator:
+    def __init__(self, fold_data: dict):
+        """
+        パース済みの.fold形式の辞書データで初期化します。
+        """
+        # .foldファイルの主要なデータを取得
+        self.vertices_coords = fold_data.get("vertices_coords", [])
+        self.creases_vertices = fold_data.get("creases_vertices", [])
+        self.creases_assignment = fold_data.get("creases_assignment", [])
+
+        # --- 事前処理 ---
+        # 各頂点に接続されている折り線のインデックスをマッピングする
+        # 例: self.vertex_to_creases[3] = [0, 5, 8] -> 頂点3には折り線0, 5, 8が接続
+        self.vertex_to_creases = [[] for _ in range(len(self.vertices_coords))]
+        for i, crease in enumerate(self.creases_vertices):
+            # .foldのインデックスは1から始まることがあるが、ここでは0-indexedと仮定
+            # 実際のデータに合わせて調整が必要
+            v1_index = crease[0]
+            v2_index = crease[1]
+            self.vertex_to_creases[v1_index].append(i)
+            self.vertex_to_creases[v2_index].append(i)
+
+    def check_maekawa(self) -> int:
+        """
+        全ての頂点に対して前川の定理をチェックし、違反している頂点の総数を返します。
+        
+        前川の定理: ある頂点に集まる山折り(M)と谷折り(V)の数の差は常に2である。
+        | M - V | = 2
+        """
+        violation_count = 0
+        
+        # 各頂点についてループ
+        for connected_creases in self.vertex_to_creases:
+            mountain_count = 0
+            valley_count = 0
+
+            # 頂点に接続された折り線をチェック
+            for crease_index in connected_creases:
+                assignment = self.creases_assignment[crease_index]
+                if assignment == 'M':
+                    mountain_count += 1
+                elif assignment == 'V':
+                    valley_count += 1
+            
+            # 定理のチェック (折り線が存在する頂点のみ対象)
+            if mountain_count + valley_count > 0:
+                if abs(mountain_count - valley_count) != 2:
+                    violation_count += 1
+                    
+        return violation_count
+
+# --- テスト用のコード ---
+if __name__ == '__main__':
+    # 前川の定理に違反する単純なテストデータを作成
+    # 頂点0に山折りが3本、谷折りが0本集まっている -> |3-0| != 2 なので違反
+    test_fold_data = {
+        "vertices_coords": [
+            [0, 0],  # 0
+            [1, 1],  # 1
+            [1, -1], # 2
+            [-1, 0]  # 3
+        ],
+        "creases_vertices": [
+            [0, 1], # crease 0
+            [0, 2], # crease 1
+            [0, 3]  # crease 2
+        ],
+        "creases_assignment": [
+            'M', # crease 0
+            'M', # crease 1
+            'M'  # crease 2
+        ]
+    }
+
+    # バリデーターをインスタンス化
+    validator = OrigamiValidator(test_fold_data)
+    
+    # 前川の定理の違反数をチェック
+    maekawa_violations = validator.check_maekawa()
+    
+    print(f"--- 前川の定理チェック ---")
+    print(f"違反している頂点の数: {maekawa_violations}")
+
+    # 違反がない正常なデータもテスト
+    # 頂点0に山折り3本、谷折り1本 -> |3-1| = 2 なのでOK
+    test_fold_data_ok = {
+        "vertices_coords": [
+            [0, 0], [1, 1], [1, -1], [-1, 0], [-1, -1]
+        ],
+        "creases_vertices": [
+            [0, 1], [0, 2], [0, 3], [0, 4]
+        ],
+        "creases_assignment": [
+            'M', 'M', 'M', 'V'
+        ]
+    }
+    validator_ok = OrigamiValidator(test_fold_data_ok)
+    maekawa_violations_ok = validator_ok.check_maekawa()
+    print(f"正常なデータの違反数: {maekawa_violations_ok}")
