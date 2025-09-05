@@ -293,27 +293,65 @@ def check_kawasaki_theorem(angles, vertex_index):
     return None
 
 
-def check_big_little_big_theorem(angles, vertex_index):
-    if len(angles) != 4:
-        return None # この定理は折り線が4本の頂点にのみ適用
+# --- この関数を既存の check_big_little_big_theorem と置き換える ---
+def check_big_little_big_theorem(ordered_half_edges, vertex_index):
+    """
+    Big-Little-Big定理から導かれる局所的な条件を検証する。
+    ルール: 連続する3つのセクター角 a1, a2, a3 について、もし a1 > a2 かつ a3 > a2 ならば、
+          a2 を形成する2本の折り線(e2, e3)の割り当ては異ならなければならない (M/V)。
+    """
+    num_edges = len(ordered_half_edges)
+    if num_edges < 3:
+        # 3辺未満の頂点では、この条件は適用できない
+        return None
 
-    sorted_angles = sorted(angles)
-    smallest_plus_largest = sorted_angles[0] + sorted_angles[3]
-    middle_sum = sorted_angles[1] + sorted_angles[2]
+    for i in range(num_edges):
+        # 連続する3つのセクター角を循環的に取得する
+        # he_prev.sector_angle は a1 に相当
+        # he_min.sector_angle  は a2 に相当
+        # he_next.sector_angle は a3 に相当
+        he_prev = ordered_half_edges[i]
+        he_min  = ordered_half_edges[(i + 1) % num_edges]
+        he_next = ordered_half_edges[(i + 2) % num_edges]
 
-    # 浮動小数点数の比較のため、A > B を A - B > tolerance でチェック
-    if smallest_plus_largest > middle_sum and not math.isclose(smallest_plus_largest, middle_sum):
-         return {
-            "type": "BigLittleBig",
-            "vertex": vertex_index,
-            "message": (
-                f"Vertex {vertex_index} fails the Big-Little-Big theorem for degree 4 vertices. "
-                f"Sum of smallest and largest angles ({math.degrees(smallest_plus_largest):.2f} deg) "
-                f"must not be greater than the sum of the other two angles ({math.degrees(middle_sum):.2f} deg)."
-            )
-        }
+        angle1 = he_prev.sector_angle
+        angle2 = he_min.sector_angle
+        angle3 = he_next.sector_angle
+
+        # 条件: angle1 > angle2 かつ angle3 > angle2 (angle2が局所最小角)
+        # 浮動小数点数の比較のため、A > B を A - B > EPSILON でチェック
+        if (angle1 - angle2 > EPSILON) and (angle3 - angle2 > EPSILON):
+            # 条件を満たした場合、angle2を形成する2本の折り線の割り当てをチェックする。
+            # angle2 (he_min.sector_angle) は、折り線 he_min と he_next によって形成される。
+            assignment1 = he_min.assignment
+            assignment2 = he_next.assignment
+
+            # M(山折り)またはV(谷折り)でない場合はチェック対象外
+            if assignment1 not in ["M", "V"] or assignment2 not in ["M", "V"]:
+                continue
+
+            # 割り当てが同じであればルール違反
+            if assignment1 == assignment2:
+                return {
+                    "type": "BigLittleBigCondition",
+                    "vertex": vertex_index,
+                    "message": (
+                        f"Vertex {vertex_index} fails the local minima condition (derived from Big-Little-Big). "
+                        f"The two creases forming a local minimum angle must have different assignments (one mountain, one valley)."
+                    ),
+                    "context": {
+                        "local_minimum_angle_deg": math.degrees(angle2),
+                        "surrounding_angles_deg": [math.degrees(angle1), math.degrees(angle3)],
+                        "conflicting_assignments": [assignment1, assignment2],
+                        "involved_vertices": sorted([
+                            he_min.edge_indices_tuple[1],
+                            he_next.edge_indices_tuple[1]
+                        ])
+                    }
+                }
+    
+    # 全ての局所最小角でルールが満たされた
     return None
-
 
 def check_generalized_blb_lemma(ordered_half_edges, vertex_index):
     """
@@ -532,7 +570,7 @@ def validate_fold_file(file_path):
         
         sector_angles_rad = [he.sector_angle for he in ordered_half_edges]
         level1_errors.append(check_kawasaki_theorem(sector_angles_rad, i))
-        level1_errors.append(check_big_little_big_theorem(sector_angles_rad, i))
+        level1_errors.append(check_big_little_big_theorem(ordered_half_edges, i)) # <- この行を修正
         level1_errors.append(check_generalized_blb_lemma(ordered_half_edges, i))
         
         level1_errors = [e for e in level1_errors if e is not None]
