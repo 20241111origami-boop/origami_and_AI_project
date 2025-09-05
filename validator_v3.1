@@ -1,0 +1,107 @@
+import json
+import math
+import sys
+
+# 浮動小数点数の比較に使用する微小な許容誤差
+EPSILON = 1e-6
+
+def get_connected_edges_and_vertices(vertex_id, edges_vertices, vertices_coords):
+    """指定された頂点に接続するエッジ情報を角度順にソートして返す"""
+    connected = []
+    for i, edge in enumerate(edges_vertices):
+        if vertex_id in edge:
+            other_vertex_id = edge[1] if edge[0] == vertex_id else edge[0]
+            p0 = vertices_coords[vertex_id]
+            p1 = vertices_coords[other_vertex_id]
+            vec_x = p1[0] - p0[0]
+            vec_y = p1[1] - p0[1]
+            angle = math.atan2(vec_y, vec_x)
+            connected.append({
+                "edge_index": i,
+                "angle": angle
+            })
+    connected.sort(key=lambda x: x["angle"])
+    return connected
+
+def check_maekawa_theorem(connected_edges, edges_assignment):
+    """前川の定理 |M - V| = 2 を検証する"""
+    mountain_folds = sum(1 for e in connected_edges if edges_assignment[e["edge_index"]] == "M")
+    valley_folds = sum(1 for e in connected_edges if edges_assignment[e["edge_index"]] == "V")
+    
+    if mountain_folds + valley_folds == 0:
+        return True, ""
+
+    if abs(mountain_folds - valley_folds) != 2:
+        msg = f"Mountain folds: {mountain_folds}, Valley folds: {valley_folds}. |M-V| is {abs(mountain_folds - valley_folds)}, should be 2."
+        return False, msg
+        
+    return True, ""
+
+def check_kawasaki_theorem(connected_edges):
+    """川崎の定理（交互角の和が等しい）を検証する"""
+    if len(connected_edges) < 2: return True, ""
+
+    face_angles = []
+    num_edges = len(connected_edges)
+    for i in range(num_edges):
+        angle1 = connected_edges[i]["angle"]
+        angle2 = connected_edges[(i + 1) % num_edges]["angle"]
+        diff = angle2 - angle1
+        if diff < 0: diff += 2 * math.pi
+        face_angles.append(diff)
+        
+    if not math.isclose(sum(face_angles), 2 * math.pi, rel_tol=EPSILON):
+        msg = f"Sum of angles is {math.degrees(sum(face_angles)):.2f}, should be 360."
+        return False, msg
+        
+    odd_sum = sum(face_angles[i] for i in range(0, num_edges, 2))
+    even_sum = sum(face_angles[i] for i in range(1, num_edges, 2))
+    
+    if not math.isclose(odd_sum, even_sum, rel_tol=EPSILON):
+        msg = f"Sum of alternating angles are {math.degrees(odd_sum):.2f} and {math.degrees(even_sum):.2f}. They must be equal."
+        return False, msg
+    
+    return True, ""
+
+def validate_fold_file(file_path):
+    """ .fold ファイルを読み込み、検証を実行するメイン関数 """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f: data = json.load(f)
+    except Exception as e:
+        return {"valid": False, "errors": [{"type": "FileReadError", "message": str(e)}]}
+
+    vertices_coords = data.get("vertices_coords")
+    edges_vertices = data.get("edges_vertices")
+    edges_assignment = data.get("edges_assignment")
+
+    if not all([vertices_coords, edges_vertices, edges_assignment]):
+        return {"valid": False, "errors": [{"type": "DataFormatError", "message": "Missing required keys."}]}
+    
+    errors = []
+    for i in range(len(vertices_coords)):
+        connected = get_connected_edges_and_vertices(i, edges_vertices, vertices_coords)
+        
+        # 境界上の頂点(エッジに"B"を含む)は検証をスキップする
+        is_boundary_vertex = any(edges_assignment[e["edge_index"]] == "B" for e in connected)
+        if is_boundary_vertex or not connected:
+            continue
+
+        for func, name in [(check_maekawa_theorem, "Maekawa"), (check_kawasaki_theorem, "Kawasaki")]:
+            # 川崎の定理は引数が異なるため、個別呼び出しが必要
+            if name == "Maekawa":
+                 is_valid, msg = func(connected, edges_assignment)
+            elif name == "Kawasaki":
+                 is_valid, msg = func(connected)
+
+            if not is_valid:
+                errors.append({"type": name, "vertex": i, "message": msg})
+
+    return {"valid": not errors, "errors": errors}
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print(f"Usage: python {sys.argv[0]} <path_to_fold_file>")
+        sys.exit(1)
+        
+    result = validate_fold_file(sys.argv[1])
+    print(json.dumps(result, indent=2))
