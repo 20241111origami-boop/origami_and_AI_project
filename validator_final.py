@@ -101,9 +101,11 @@ class FoldingRing:
             return None
         return self.minimal_indices.pop(0)
 
+    # --- 既存の fold_at メソッドを、以下で完全に置き換え ---
+
     def fold_at(self, index):
         """
-        指定されたインデックスで折り畳み操作を実行し、リストを更新する
+        指定されたインデックスで折り畳み操作を実行し、リストを更新する (ロバスト版)
         """
         n = self.size()
         if n <= 2: return
@@ -111,34 +113,41 @@ class FoldingRing:
         # 最小角(m)とその両隣(p, n)を特定
         p_idx = (index - 1 + n) % n
         m_idx = index
-        n_idx = (index + 1) % n
         
         p = self.elements[p_idx]
         m = self.elements[m_idx]
-        n = self.elements[n_idx]
 
-        # 新しい要素を計算 (Erik Demaineのアルゴリズムに基づく)
-        # 角度は p + n - m、線の種類は p のものを継承
-        new_angle = p.angle + n.angle - m.angle
-        new_element = RingElement(new_angle, p.line_type)
+        # --- ここからが新しいロジック ---
+        # 物理的な折り畳みをより正確にシミュレートする
+        # 最小角mを挟む2つの線(pの線とmの線)を、mの線で折りたたむイメージ。
+        # pとmの角度を比較し、大きい方から小さい方を引く。
+        if p.angle > m.angle:
+            new_angle = p.angle - m.angle
+            new_element = RingElement(new_angle, p.line_type)
+            
+            # pとmを削除し、pの位置に新しい要素を挿入
+            indices_to_remove = sorted([p_idx, m_idx], reverse=True)
+            temp_list = self.elements[:]
+            del temp_list[indices_to_remove[0]]
+            del temp_list[indices_to_remove[1]]
+            
+            insert_pos = p_idx - sum(1 for i in indices_to_remove if i < p_idx)
+            temp_list.insert(insert_pos, new_element)
+            self.elements = temp_list
 
-        # 新しい環状リストを構築 (3要素を削除し、1要素を挿入)
-        new_elements = []
-        # p_idxがm_idxやn_idxより大きい場合(リストの先頭をまたぐ場合)のケア
-        indices_to_remove = sorted([p_idx, m_idx, n_idx], reverse=True)
-        
-        temp_list = self.elements[:]
-        # 後ろのインデックスから削除することで、前のインデックスがずれないようにする
-        del temp_list[indices_to_remove[0]]
-        del temp_list[indices_to_remove[1]]
-        del temp_list[indices_to_remove[2]]
-        
-        # p_idx のあった場所に新しい要素を挿入
-        # 削除によってp_idxの位置がずれる可能性を考慮
-        insert_pos = p_idx - sum(1 for i in indices_to_remove if i < p_idx)
-        temp_list.insert(insert_pos, new_element)
-        
-        self.elements = temp_list
+        else: # m.angle >= p.angle (iscloseで判定すべきだが、ここでは大小で分岐)
+            new_angle = m.angle - p.angle
+            new_element = RingElement(new_angle, m.line_type)
+
+            # pとmを削除し、mの位置に新しい要素を挿入
+            indices_to_remove = sorted([p_idx, m_idx], reverse=True)
+            temp_list = self.elements[:]
+            del temp_list[indices_to_remove[0]]
+            del temp_list[indices_to_remove[1]]
+
+            insert_pos = m_idx - sum(1 for i in indices_to_remove if i < m_idx)
+            temp_list.insert(insert_pos, new_element)
+            self.elements = temp_list
         
         # 最小角リストを再計算
         self.minimal_indices = self._find_all_minimal_indices()
