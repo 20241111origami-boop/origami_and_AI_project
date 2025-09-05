@@ -1,8 +1,0 @@
-
-import json
-import math
-import sys
-from collections import defaultdict, namedtuple
-
-# 浮動小数点数演算の許容誤差を定義
-EPSILON = 1e-9
