@@ -4,7 +4,7 @@ import sys
 from collections import defaultdict, namedtuple
 
 
-EPSILON = 1e-9
+EPSILON = 1e-6
 def get_connected_edges_assignments(vertex_index, edges_vertices, edges_assignment):
     """指定された頂点に接続するエッジの種類（山折り、谷折りなど）を取得する"""
     assignments = []
