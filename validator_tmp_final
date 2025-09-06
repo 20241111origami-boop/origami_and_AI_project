@@ -2,6 +2,7 @@ import json
 import math
 import sys
 from collections import defaultdict, namedtuple
+import itertools
 
 
 EPSILON = 1e-9
@@ -61,7 +62,124 @@ HalfEdge = namedtuple('HalfEdge', [
     'edge_indices_tuple' # (中心頂点, 接続先頂点)
 ])
 
+# --- 以下の3つの関数を validator.py 内の既存のものと置き換えてください ---
 
+def _get_orientation(p, q, r):
+    """3点の位置関係（共線、時計回り、反時計回り）を返す"""
+    # 浮動小数点数の計算誤差を考慮
+    val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
+    if math.isclose(val, 0, rel_tol=EPSILON, abs_tol=EPSILON):
+        return 0  # Collinear
+    return 1 if val > 0 else 2  # Clockwise or Counterclockwise
+
+def _on_segment(p, q, r):
+    """点qが線分pr上にあるかどうかをチェック（3点が共線であること前提）"""
+    return (q[0] <= max(p[0], r[0]) + EPSILON and q[0] >= min(p[0], r[0]) - EPSILON and
+            q[1] <= max(p[1], r[1]) + EPSILON and q[1] >= min(p[1], r[1]) - EPSILON)
+
+def check_improper_edge_intersections(vertices_coords, edges_vertices):
+    """
+    エッジ同士が端点以外で交差、または不適切に重なっているかを検証する。(堅牢版)
+    """
+    errors = []
+    edge_pairs = itertools.combinations(enumerate(edges_vertices), 2)
+
+    for (idx1, edge1), (idx2, edge2) in edge_pairs:
+        v1_idx, v2_idx = edge1
+        v3_idx, v4_idx = edge2
+
+        # 頂点を共有しているエッジはチェック対象外
+        if len(set(edge1) & set(edge2)) > 0:
+            continue
+
+        p1, q1 = vertices_coords[v1_idx], vertices_coords[v2_idx]
+        p2, q2 = vertices_coords[v3_idx], vertices_coords[v4_idx]
+
+        o1 = _get_orientation(p1, q1, p2)
+        o2 = _get_orientation(p1, q1, q2)
+        o3 = _get_orientation(p2, q2, p1)
+        o4 = _get_orientation(p2, q2, q1)
+
+        # 一般的な交差ケース: 2つの線分が互いをまたいでいる
+        if o1 != o2 and o3 != o4:
+            errors.append({
+                "type": "ImproperEdgeIntersection",
+                "message": f"Edge {idx1} ({v1_idx}-{v2_idx}) and Edge {idx2} ({v3_idx}-{v4_idx}) improperly intersect.",
+                "context": {"edge_indices": [idx1, idx2], "vertex_indices": [edge1, edge2]}
+            })
+            continue
+
+        # 特殊ケース: 同一直線上にある場合の「重なり」をチェック
+        # p2が線分p1-q1上にあれば、重なりがあると判断
+        if o1 == 0 and _on_segment(p1, p2, q1):
+             errors.append({
+                "type": "ImproperCollinearOverlap",
+                "message": f"Edge {idx1} and Edge {idx2} are collinear and overlap.",
+                "context": {"edge_indices": [idx1, idx2], "vertex_indices": [edge1, edge2]}
+            })
+        # q2が線分p1-q1上にあれば、重なりがあると判断
+        elif o2 == 0 and _on_segment(p1, q2, q1):
+             errors.append({
+                "type": "ImproperCollinearOverlap",
+                "message": f"Edge {idx1} and Edge {idx2} are collinear and overlap.",
+                "context": {"edge_indices": [idx1, idx2], "vertex_indices": [edge1, edge2]}
+            })
+        # p1が線分p2-q2上にあれば、重なりがあると判断
+        elif o3 == 0 and _on_segment(p2, p1, q2):
+             errors.append({
+                "type": "ImproperCollinearOverlap",
+                "message": f"Edge {idx1} and Edge {idx2} are collinear and overlap.",
+                "context": {"edge_indices": [idx1, idx2], "vertex_indices": [edge1, edge2]}
+            })
+        # q1が線分p2-q2上にあれば、重なりがあると判断
+        elif o4 == 0 and _on_segment(p2, q1, q2):
+             errors.append({
+                "type": "ImproperCollinearOverlap",
+                "message": f"Edge {idx1} and Edge {idx2} are collinear and overlap.",
+                "context": {"edge_indices": [idx1, idx2], "vertex_indices": [edge1, edge2]}
+            })
+
+    return errors if errors else None
+
+
+
+def check_vertices_within_boundary(vertices_coords, x_range=(-200, 200), y_range=(-200, 200)):
+    """
+    全ての頂点が指定された境界内に存在するかを検証する。
+    境界のデフォルト値は (-200, 200) に設定されています。
+    """
+    errors = []
+    # x_rangeとy_rangeの最小値・最大値が正しい順序であることを確認
+    x_min, x_max = min(x_range), max(x_range)
+    y_min, y_max = min(y_range), max(y_range)
+
+    for i, coord in enumerate(vertices_coords):
+        # 座標がNoneや不正な形式でないことを確認
+        if coord is None or len(coord) != 2:
+            errors.append({
+                "type": "InvalidCoordinateFormat",
+                "vertex": i,
+                "message": f"Vertex {i} has invalid coordinate format: {coord}.",
+                "context": {"coords": coord}
+            })
+            continue
+            
+        x, y = coord
+        # 判定ロジック: 許容誤差(EPSILON)を含めて範囲内かをチェック
+        if not (x_min - EPSILON <= x <= x_max + EPSILON and
+                y_min - EPSILON <= y <= y_max + EPSILON):
+            errors.append({
+                "type": "VertexOutOfBounds",
+                "vertex": i,
+                "message": f"Vertex {i} with coordinates ({x:.4f}, {y:.4f}) is outside the defined boundary.",
+                "context": {
+                    "coords": [x, y],
+                    "x_boundary": [x_min, x_max],
+                    "y_boundary": [y_min, y_max]
+                }
+            })
+            
+    return errors if errors else None
 
 def get_ordered_half_edges(vertex_index, vertices_coords, edges_vertices, edges_assignment):
     """
@@ -401,6 +519,10 @@ def check_generalized_blb_lemma(ordered_half_edges, vertex_index):
     
     return None # 全てのシーケンスがルールを満たした
 
+# validator.py の先頭に追加
+
+# --- validate_fold_file 関数を以下のように修正 ---
+
 def validate_fold_file(file_path):
     """
     .foldファイルを読み込み、平坦折り畳み可能性のルールを検証する (最終版)
@@ -422,15 +544,30 @@ def validate_fold_file(file_path):
     
     errors = []
 
-    # 各頂点についてループ
+    # --- レベル0-Global: 全体的な幾何学的健全性チェック ---
+    global_errors = []
+    
+    # [新規] 頂点が境界内に収まっているか
+    boundary_errors = check_vertices_within_boundary(vertices_coords)
+    if boundary_errors: global_errors.extend(boundary_errors)
+
+    # [新規] エッジが不適切に交差していないか
+    intersection_errors = check_improper_edge_intersections(vertices_coords, edges_vertices)
+    if intersection_errors: global_errors.extend(intersection_errors)
+    
+    if global_errors:
+        # 大域的なエラーがあれば、頂点ごとのチェックは行わずに終了
+        return {"valid": False, "errors": global_errors}
+
+    # --- 各頂点についてループ (既存のチェック) ---
     for i in range(len(vertices_coords)):
-        # --- レベル0: 基本的な健全性チェック ---
+        # --- レベル0-Local: 頂点周りの基本的な健全性チェック ---
         assignments = get_connected_edges_assignments(i, edges_vertices, edges_assignment)
         
         error = check_boundary_count(assignments, i)
         if error:
             errors.append(error)
-            continue
+            continue # この頂点の以降のチェックはスキップ
 
         ordered_half_edges = get_ordered_half_edges(i, vertices_coords, edges_vertices, edges_assignment)
         if not ordered_half_edges:
@@ -439,7 +576,7 @@ def validate_fold_file(file_path):
         error = check_overlapping_creases(ordered_half_edges, i)
         if error:
             errors.append(error)
-            continue # 健全性チェックに失敗した場合、以降の検証は無意味
+            continue
 
         # 境界頂点(Bの数が2)の場合、内点向けの定理は適用しない
         if assignments.count("B") > 0:
@@ -451,19 +588,17 @@ def validate_fold_file(file_path):
         
         sector_angles_rad = [he.sector_angle for he in ordered_half_edges]
         level1_errors.append(check_kawasaki_theorem(sector_angles_rad, i))
-        level1_errors.append(check_big_little_big_theorem(ordered_half_edges, i)) # <- この行を修正
+        level1_errors.append(check_big_little_big_theorem(ordered_half_edges, i))
         level1_errors.append(check_generalized_blb_lemma(ordered_half_edges, i))
         
         level1_errors = [e for e in level1_errors if e is not None]
         if level1_errors:
             errors.extend(level1_errors)
-            continue # レベル1でエラーがあれば、レベル2（仮）は実行しない
 
     if errors:
         return {"valid": False, "errors": errors}
     
     return {"valid": True, "errors": []}
-
 
 
 
