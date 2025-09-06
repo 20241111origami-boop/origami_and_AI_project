@@ -32,12 +32,15 @@ class Config:
 class OrigamiDataset(InMemoryDataset):
     def __init__(self, root, transform=None, pre_transform=None):
         super().__init__(root, transform, pre_transform)
-        self.data, self.slices = torch.load(self.processed_paths[0])
+        # Fix: Use weights_only=False for torch_geometric data
+        self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
     @property
     def raw_file_names(self):
         # Expects .fold files to be in data/raw
         raw_dir = os.path.join(self.root, 'raw')
+        if not os.path.exists(raw_dir):
+            return []
         return [f for f in os.listdir(raw_dir) if f.endswith('.fold')]
 
     @property
@@ -60,12 +63,17 @@ class OrigamiDataset(InMemoryDataset):
                 fold_data = json.load(f)
 
             # 1. Node features (x): vertex coordinates
-            vertices_coords = torch.tensor(fold_data['vertices_coords'], dtype=torch.float)
-            if vertices_coords.dim() == 1: # Handle flat list case
-                num_vertices = len(fold_data['vertices_coords']) // 2
-                x = vertices_coords.view(num_vertices, 2)
+            vertices_coords = fold_data['vertices_coords']
+            if isinstance(vertices_coords[0], list):
+                # Already in [[x1, y1], [x2, y2], ...] format
+                x = torch.tensor(vertices_coords, dtype=torch.float)
             else:
-                x = vertices_coords
+                # Flat list format [x1, y1, x2, y2, ...]
+                num_vertices = len(vertices_coords) // 2
+                x = torch.tensor(vertices_coords, dtype=torch.float).view(num_vertices, 2)
+            
+            num_nodes = x.size(0)
+            print(f"Processing {filename}: {num_nodes} nodes")
 
             # 2. Edge connectivity (edge_index) and edge attributes (edge_attr)
             source_nodes = []
@@ -79,6 +87,11 @@ class OrigamiDataset(InMemoryDataset):
                 # .fold is 1-based, convert to 0-based
                 u, v = edge[0] - 1, edge[1] - 1
                 
+                # Validate indices
+                if u < 0 or u >= num_nodes or v < 0 or v >= num_nodes:
+                    print(f"Warning: Invalid edge in {filename}: {edge} -> ({u}, {v}), skipping...")
+                    continue
+                
                 # Add edges for undirected graph
                 source_nodes.extend([u, v])
                 target_nodes.extend([v, u])
@@ -89,12 +102,21 @@ class OrigamiDataset(InMemoryDataset):
                 # Add same attribute for both directions
                 edge_attrs.extend([edge_type, edge_type])
 
+            if len(source_nodes) == 0:
+                print(f"Warning: No valid edges found in {filename}, skipping this file...")
+                continue
+
             edge_index = torch.tensor([source_nodes, target_nodes], dtype=torch.long)
             # Edge attributes are the labels for classification, must be Long
             edge_attr = torch.tensor(edge_attrs, dtype=torch.long)
             
+            print(f"  - Created graph with {edge_index.size(1)} edges")
+            
             graph_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
             data_list.append(graph_data)
+
+        if len(data_list) == 0:
+            raise ValueError("No valid graphs found in the dataset!")
 
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
@@ -196,10 +218,26 @@ def main():
     # For PoC, use the same dataset for training and validation
     # A proper implementation would split this.
     print(f"Loading dataset from {config.DATA_DIR}...")
-    dataset = OrigamiDataset(root=config.DATA_DIR)
+    # Force reprocessing to ensure our fixes are applied
+    dataset = OrigamiDataset(root=config.DATA_DIR, force_reload=True)
+    
+    # Check if dataset is empty
+    if len(dataset) == 0:
+        print("Error: No data found in dataset. Please check that .fold files exist in data/raw/ directory.")
+        return
+    
     # Simple 80/20 split for train/validation
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
+    
+    # Handle case where dataset is too small
+    if train_size == 0:
+        train_size = 1
+        val_size = len(dataset) - 1
+    if val_size == 0:
+        val_size = 1
+        train_size = len(dataset) - 1
+        
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
     
     train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
