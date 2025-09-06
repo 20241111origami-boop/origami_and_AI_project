@@ -97,8 +97,8 @@ class OrigamiDataset(InMemoryDataset):
             edge_attrs = []
 
             for i, edge in enumerate(edges_vertices):
-                # .fold is 1-based, convert to 0-based
-                u, v = edge[0] - 1, edge[1] - 1
+                # .fold is 0-based, don't have to convert to 0-based
+                u, v = edge[0] , edge[1] 
                 
                 # Validate indices
                 if u < 0 or u >= num_nodes or v < 0 or v >= num_nodes:
