@@ -1,0 +1,258 @@
+
+
+#### 1. **実験ログ (`experiments/exp_001_baseline.md`)**
+
+今回のスモークテストの結果を、一つのファイルにまとめます。
+
+*   **実験ID:** `exp_001`
+*   **目的:** Baseline GNNオートエンコーダのパイプラインが正常に機能し、学習が進むことを確認する（スモークテスト）。
+*   **使用コード:**
+    *   リポジトリ: `[あなたのリポジトリ名]`
+    *   コミットハッシュ: 
+*   **設定 (Config):**
+    *   `HIDDEN_DIM`: 64
+    *   `LATENT_DIM`: 32
+    *   `EPOCHS`: 200
+    *   `BATCH_SIZE`: 8
+    *   `LEARNING_RATE`: 0.005
+    *   `LAMBDA_RECON`: 1.0
+    *   `LAMBDA_CLASS`: 1.0
+*   **データセット:**
+    *   36個の`.fold`ファイル（ファイルリストを記載するか、データセットのバージョンを記述）
+    *   Train/Val Split: 80/20
+*   **結果:**
+    *   **最終エポックのメトリクス:**
+        *   Train Loss: 308.38
+        *   Val Loss: 598.10
+        *   Val Edge Accuracy: 44.13%
+
+Epoch: 001, Train Loss: 12374.6090 (Recon: 12371.2489, Class: 3.3599), Val Loss: 4233.9937 (Recon: 4231.6738, Class: 2.3199), Val Edge Acc: 0.4202
+Epoch: 002, Train Loss: 2396.0416 (Recon: 2392.9778, Class: 3.0638), Val Loss: 1810.3209 (Recon: 1806.4391, Class: 3.8819), Val Edge Acc: 0.3290
+Epoch: 003, Train Loss: 2091.1691 (Recon: 2087.3084, Class: 3.8607), Val Loss: 2300.0283 (Recon: 2296.6287, Class: 3.3997), Val Edge Acc: 0.3625
+Epoch: 004, Train Loss: 1303.8099 (Recon: 1301.0027, Class: 2.8072), Val Loss: 932.3741 (Recon: 929.8667, Class: 2.5074), Val Edge Acc: 0.3182
+Epoch: 005, Train Loss: 797.8442 (Recon: 795.7376, Class: 2.1066), Val Loss: 1365.0979 (Recon: 1362.7372, Class: 2.3607), Val Edge Acc: 0.3888
+Epoch: 006, Train Loss: 1096.9280 (Recon: 1094.8994, Class: 2.0286), Val Loss: 1167.7002 (Recon: 1165.8611, Class: 1.8391), Val Edge Acc: 0.3538
+Epoch: 007, Train Loss: 827.9884 (Recon: 826.1710, Class: 1.8174), Val Loss: 931.4801 (Recon: 929.5526, Class: 1.9275), Val Edge Acc: 0.3744
+Epoch: 008, Train Loss: 630.0059 (Recon: 628.1295, Class: 1.8765), Val Loss: 1018.7043 (Recon: 1016.7424, Class: 1.9619), Val Edge Acc: 0.3435
+Epoch: 009, Train Loss: 757.1651 (Recon: 755.4892, Class: 1.6759), Val Loss: 977.1952 (Recon: 975.5921, Class: 1.6031), Val Edge Acc: 0.4094
+Epoch: 010, Train Loss: 703.2900 (Recon: 701.7870, Class: 1.5031), Val Loss: 896.0173 (Recon: 894.5695, Class: 1.4478), Val Edge Acc: 0.3172
+Epoch: 011, Train Loss: 659.6991 (Recon: 658.2820, Class: 1.4171), Val Loss: 890.2068 (Recon: 888.6623, Class: 1.5446), Val Edge Acc: 0.3429
+Epoch: 012, Train Loss: 659.4030 (Recon: 658.0406, Class: 1.3625), Val Loss: 835.8769 (Recon: 834.5328, Class: 1.3441), Val Edge Acc: 0.3620
+Epoch: 013, Train Loss: 628.6405 (Recon: 627.3709, Class: 1.2696), Val Loss: 794.9211 (Recon: 793.4786, Class: 1.4425), Val Edge Acc: 0.3507
+Epoch: 014, Train Loss: 568.9598 (Recon: 567.6206, Class: 1.3392), Val Loss: 795.8552 (Recon: 794.4520, Class: 1.4032), Val Edge Acc: 0.3728
+Epoch: 015, Train Loss: 583.8670 (Recon: 582.5554, Class: 1.3115), Val Loss: 769.6421 (Recon: 768.3644, Class: 1.2777), Val Edge Acc: 0.3754
+Epoch: 016, Train Loss: 644.5641 (Recon: 643.3373, Class: 1.2267), Val Loss: 804.8276 (Recon: 803.5127, Class: 1.3150), Val Edge Acc: 0.4212
+Epoch: 017, Train Loss: 545.2560 (Recon: 544.0598, Class: 1.1962), Val Loss: 793.9540 (Recon: 792.7354, Class: 1.2187), Val Edge Acc: 0.3393
+Epoch: 018, Train Loss: 527.9646 (Recon: 526.7673, Class: 1.1974), Val Loss: 759.0828 (Recon: 757.8326, Class: 1.2502), Val Edge Acc: 0.4027
+Epoch: 019, Train Loss: 552.7551 (Recon: 551.5797, Class: 1.1754), Val Loss: 751.6661 (Recon: 750.4708, Class: 1.1953), Val Edge Acc: 0.3399
+Epoch: 020, Train Loss: 536.7609 (Recon: 535.5969, Class: 1.1640), Val Loss: 744.3077 (Recon: 743.0402, Class: 1.2675), Val Edge Acc: 0.3538
+Epoch: 021, Train Loss: 538.7731 (Recon: 537.6084, Class: 1.1647), Val Loss: 735.0131 (Recon: 733.8835, Class: 1.1295), Val Edge Acc: 0.4109
+Epoch: 022, Train Loss: 545.0027 (Recon: 543.8613, Class: 1.1414), Val Loss: 726.0333 (Recon: 724.8546, Class: 1.1787), Val Edge Acc: 0.4037
+Epoch: 023, Train Loss: 536.8713 (Recon: 535.7472, Class: 1.1241), Val Loss: 761.4758 (Recon: 760.2673, Class: 1.2086), Val Edge Acc: 0.4423
+Epoch: 024, Train Loss: 519.8734 (Recon: 518.6954, Class: 1.1779), Val Loss: 751.6691 (Recon: 750.5405, Class: 1.1285), Val Edge Acc: 0.4150
+Epoch: 025, Train Loss: 528.9329 (Recon: 527.7796, Class: 1.1533), Val Loss: 741.2804 (Recon: 740.1492, Class: 1.1312), Val Edge Acc: 0.4325
+Epoch: 026, Train Loss: 576.5003 (Recon: 575.3755, Class: 1.1248), Val Loss: 732.1294 (Recon: 731.0271, Class: 1.1023), Val Edge Acc: 0.3780
+Epoch: 027, Train Loss: 545.4239 (Recon: 544.3267, Class: 1.0972), Val Loss: 729.1887 (Recon: 728.0663, Class: 1.1224), Val Edge Acc: 0.4181
+Epoch: 028, Train Loss: 538.7677 (Recon: 537.6622, Class: 1.1055), Val Loss: 819.7043 (Recon: 818.5961, Class: 1.1083), Val Edge Acc: 0.3713
+Epoch: 029, Train Loss: 553.7927 (Recon: 552.6977, Class: 1.0950), Val Loss: 826.3694 (Recon: 825.2086, Class: 1.1608), Val Edge Acc: 0.4109
+Epoch: 030, Train Loss: 563.3765 (Recon: 562.2798, Class: 1.0967), Val Loss: 838.5616 (Recon: 837.3150, Class: 1.2466), Val Edge Acc: 0.3110
+Epoch: 031, Train Loss: 568.4991 (Recon: 567.3808, Class: 1.1183), Val Loss: 820.1857 (Recon: 819.0911, Class: 1.0946), Val Edge Acc: 0.4331
+Epoch: 032, Train Loss: 526.9975 (Recon: 525.9137, Class: 1.0838), Val Loss: 758.5924 (Recon: 757.5280, Class: 1.0644), Val Edge Acc: 0.4320
+Epoch: 033, Train Loss: 537.0478 (Recon: 535.9635, Class: 1.0843), Val Loss: 759.9332 (Recon: 758.7093, Class: 1.2239), Val Edge Acc: 0.4119
+Epoch: 034, Train Loss: 527.7734 (Recon: 526.6399, Class: 1.1335), Val Loss: 751.4834 (Recon: 750.3566, Class: 1.1268), Val Edge Acc: 0.4372
+Epoch: 035, Train Loss: 526.1125 (Recon: 524.9990, Class: 1.1135), Val Loss: 757.2546 (Recon: 756.1236, Class: 1.1311), Val Edge Acc: 0.3872
+Epoch: 036, Train Loss: 549.6829 (Recon: 548.5941, Class: 1.0888), Val Loss: 719.5227 (Recon: 718.2924, Class: 1.2304), Val Edge Acc: 0.3723
+Epoch: 037, Train Loss: 543.9922 (Recon: 542.8761, Class: 1.1161), Val Loss: 709.1035 (Recon: 707.9920, Class: 1.1115), Val Edge Acc: 0.4053
+Epoch: 038, Train Loss: 560.4540 (Recon: 559.3682, Class: 1.0859), Val Loss: 766.5612 (Recon: 765.4727, Class: 1.0884), Val Edge Acc: 0.4320
+Epoch: 039, Train Loss: 545.8856 (Recon: 544.8081, Class: 1.0775), Val Loss: 768.9417 (Recon: 767.8671, Class: 1.0746), Val Edge Acc: 0.4078
+Epoch: 040, Train Loss: 557.6312 (Recon: 556.5963, Class: 1.0350), Val Loss: 720.5742 (Recon: 719.4382, Class: 1.1360), Val Edge Acc: 0.3955
+Epoch: 041, Train Loss: 537.5757 (Recon: 536.4929, Class: 1.0828), Val Loss: 724.2446 (Recon: 723.0411, Class: 1.2035), Val Edge Acc: 0.3599
+Epoch: 042, Train Loss: 549.2791 (Recon: 548.1572, Class: 1.1219), Val Loss: 713.5439 (Recon: 712.4133, Class: 1.1306), Val Edge Acc: 0.4027
+Epoch: 043, Train Loss: 502.6750 (Recon: 501.5797, Class: 1.0953), Val Loss: 694.8086 (Recon: 693.6552, Class: 1.1534), Val Edge Acc: 0.4464
+Epoch: 044, Train Loss: 498.7970 (Recon: 497.7149, Class: 1.0821), Val Loss: 688.7643 (Recon: 687.6550, Class: 1.1093), Val Edge Acc: 0.3939
+Epoch: 045, Train Loss: 541.9959 (Recon: 540.9455, Class: 1.0504), Val Loss: 751.4819 (Recon: 750.4310, Class: 1.0509), Val Edge Acc: 0.4300
+Epoch: 046, Train Loss: 501.2283 (Recon: 500.2102, Class: 1.0181), Val Loss: 849.0791 (Recon: 848.0466, Class: 1.0325), Val Edge Acc: 0.4156
+Epoch: 047, Train Loss: 523.5930 (Recon: 522.5769, Class: 1.0161), Val Loss: 774.9393 (Recon: 773.8810, Class: 1.0584), Val Edge Acc: 0.4192
+Epoch: 048, Train Loss: 539.2385 (Recon: 538.2277, Class: 1.0109), Val Loss: 707.6061 (Recon: 706.5698, Class: 1.0362), Val Edge Acc: 0.4279
+Epoch: 049, Train Loss: 528.1901 (Recon: 527.1878, Class: 1.0023), Val Loss: 759.6668 (Recon: 758.6003, Class: 1.0665), Val Edge Acc: 0.3903
+Epoch: 050, Train Loss: 510.2783 (Recon: 509.2506, Class: 1.0277), Val Loss: 1049.7369 (Recon: 1048.6866, Class: 1.0502), Val Edge Acc: 0.4274
+Epoch: 051, Train Loss: 578.9725 (Recon: 577.9284, Class: 1.0441), Val Loss: 1101.3357 (Recon: 1100.2527, Class: 1.0830), Val Edge Acc: 0.4346
+Epoch: 052, Train Loss: 479.7036 (Recon: 478.6581, Class: 1.0455), Val Loss: 1006.5614 (Recon: 1005.4623, Class: 1.0991), Val Edge Acc: 0.3836
+Epoch: 053, Train Loss: 449.7524 (Recon: 448.7178, Class: 1.0346), Val Loss: 777.3082 (Recon: 776.2053, Class: 1.1029), Val Edge Acc: 0.3950
+Epoch: 054, Train Loss: 490.7616 (Recon: 489.7157, Class: 1.0459), Val Loss: 651.5295 (Recon: 650.4804, Class: 1.0490), Val Edge Acc: 0.4279
+Epoch: 055, Train Loss: 532.3290 (Recon: 531.3190, Class: 1.0100), Val Loss: 670.5657 (Recon: 669.4869, Class: 1.0789), Val Edge Acc: 0.3924
+Epoch: 056, Train Loss: 547.3990 (Recon: 546.3581, Class: 1.0409), Val Loss: 765.9878 (Recon: 764.7761, Class: 1.2117), Val Edge Acc: 0.3677
+Epoch: 057, Train Loss: 479.4713 (Recon: 478.3329, Class: 1.1384), Val Loss: 1017.7313 (Recon: 1016.6705, Class: 1.0608), Val Edge Acc: 0.4459
+Epoch: 058, Train Loss: 463.3729 (Recon: 462.3274, Class: 1.0455), Val Loss: 760.5723 (Recon: 759.5250, Class: 1.0473), Val Edge Acc: 0.4094
+Epoch: 059, Train Loss: 448.7716 (Recon: 447.7016, Class: 1.0700), Val Loss: 932.1440 (Recon: 931.0382, Class: 1.1058), Val Edge Acc: 0.3996
+Epoch: 060, Train Loss: 417.9365 (Recon: 416.8990, Class: 1.0376), Val Loss: 771.7019 (Recon: 770.6531, Class: 1.0488), Val Edge Acc: 0.4511
+Epoch: 061, Train Loss: 442.4560 (Recon: 441.4226, Class: 1.0334), Val Loss: 784.8190 (Recon: 783.7390, Class: 1.0800), Val Edge Acc: 0.4176
+Epoch: 062, Train Loss: 495.7727 (Recon: 494.6991, Class: 1.0736), Val Loss: 739.0623 (Recon: 738.0134, Class: 1.0489), Val Edge Acc: 0.4212
+Epoch: 063, Train Loss: 458.2259 (Recon: 457.1749, Class: 1.0510), Val Loss: 774.3433 (Recon: 773.2728, Class: 1.0705), Val Edge Acc: 0.4197
+Epoch: 064, Train Loss: 458.9790 (Recon: 457.9375, Class: 1.0415), Val Loss: 902.8435 (Recon: 901.8112, Class: 1.0324), Val Edge Acc: 0.4490
+Epoch: 065, Train Loss: 420.5917 (Recon: 419.5800, Class: 1.0117), Val Loss: 854.6779 (Recon: 853.6579, Class: 1.0200), Val Edge Acc: 0.4233
+Epoch: 066, Train Loss: 399.5967 (Recon: 398.5857, Class: 1.0110), Val Loss: 800.5771 (Recon: 799.5701, Class: 1.0070), Val Edge Acc: 0.4748
+Epoch: 067, Train Loss: 354.9409 (Recon: 353.9475, Class: 0.9934), Val Loss: 602.3724 (Recon: 601.3639, Class: 1.0085), Val Edge Acc: 0.4758
+Epoch: 068, Train Loss: 359.9433 (Recon: 358.9465, Class: 0.9968), Val Loss: 563.8235 (Recon: 562.7072, Class: 1.1164), Val Edge Acc: 0.4083
+Epoch: 069, Train Loss: 332.4298 (Recon: 331.3999, Class: 1.0299), Val Loss: 566.2488 (Recon: 565.2086, Class: 1.0402), Val Edge Acc: 0.4804
+Epoch: 070, Train Loss: 367.8596 (Recon: 366.8528, Class: 1.0068), Val Loss: 575.5455 (Recon: 574.5356, Class: 1.0099), Val Edge Acc: 0.4660
+Epoch: 071, Train Loss: 333.8838 (Recon: 332.8867, Class: 0.9971), Val Loss: 619.1879 (Recon: 618.1310, Class: 1.0568), Val Edge Acc: 0.4104
+Epoch: 072, Train Loss: 336.2134 (Recon: 335.2152, Class: 0.9981), Val Loss: 628.2365 (Recon: 627.1837, Class: 1.0527), Val Edge Acc: 0.4578
+Epoch: 073, Train Loss: 347.0868 (Recon: 346.0756, Class: 1.0111), Val Loss: 595.9305 (Recon: 594.8733, Class: 1.0572), Val Edge Acc: 0.3955
+Epoch: 074, Train Loss: 325.7948 (Recon: 324.8107, Class: 0.9842), Val Loss: 608.1588 (Recon: 607.1345, Class: 1.0243), Val Edge Acc: 0.4583
+Epoch: 075, Train Loss: 323.1487 (Recon: 322.1688, Class: 0.9799), Val Loss: 618.8644 (Recon: 617.8395, Class: 1.0250), Val Edge Acc: 0.4289
+Epoch: 076, Train Loss: 423.1146 (Recon: 422.1258, Class: 0.9888), Val Loss: 614.2787 (Recon: 613.2834, Class: 0.9953), Val Edge Acc: 0.4923
+Epoch: 077, Train Loss: 383.5852 (Recon: 382.5883, Class: 0.9969), Val Loss: 573.8737 (Recon: 572.8498, Class: 1.0239), Val Edge Acc: 0.4490
+Epoch: 078, Train Loss: 354.7069 (Recon: 353.7004, Class: 1.0065), Val Loss: 620.5305 (Recon: 619.5321, Class: 0.9984), Val Edge Acc: 0.4964
+Epoch: 079, Train Loss: 352.1346 (Recon: 351.1361, Class: 0.9985), Val Loss: 614.8302 (Recon: 613.8019, Class: 1.0282), Val Edge Acc: 0.4712
+Epoch: 080, Train Loss: 334.7196 (Recon: 333.7152, Class: 1.0044), Val Loss: 753.9296 (Recon: 752.8962, Class: 1.0334), Val Edge Acc: 0.4356
+Epoch: 081, Train Loss: 354.5481 (Recon: 353.5699, Class: 0.9783), Val Loss: 606.0082 (Recon: 605.0021, Class: 1.0061), Val Edge Acc: 0.4516
+Epoch: 082, Train Loss: 325.7624 (Recon: 324.7774, Class: 0.9850), Val Loss: 600.8493 (Recon: 599.8095, Class: 1.0398), Val Edge Acc: 0.4475
+Epoch: 083, Train Loss: 364.3208 (Recon: 363.3291, Class: 0.9917), Val Loss: 573.3822 (Recon: 572.3210, Class: 1.0612), Val Edge Acc: 0.3924
+Epoch: 084, Train Loss: 384.2090 (Recon: 383.1727, Class: 1.0362), Val Loss: 686.5749 (Recon: 685.5428, Class: 1.0321), Val Edge Acc: 0.4501
+Epoch: 085, Train Loss: 455.4208 (Recon: 454.4333, Class: 0.9876), Val Loss: 683.4367 (Recon: 682.4255, Class: 1.0112), Val Edge Acc: 0.4655
+Epoch: 086, Train Loss: 436.3370 (Recon: 435.3520, Class: 0.9850), Val Loss: 663.5085 (Recon: 662.5140, Class: 0.9945), Val Edge Acc: 0.4485
+Epoch: 087, Train Loss: 409.8877 (Recon: 408.8943, Class: 0.9934), Val Loss: 689.8539 (Recon: 688.8511, Class: 1.0028), Val Edge Acc: 0.4542
+Epoch: 088, Train Loss: 428.4563 (Recon: 427.4859, Class: 0.9704), Val Loss: 784.4219 (Recon: 783.4283, Class: 0.9935), Val Edge Acc: 0.4567
+Epoch: 089, Train Loss: 381.0409 (Recon: 380.0375, Class: 1.0034), Val Loss: 724.0659 (Recon: 723.0276, Class: 1.0383), Val Edge Acc: 0.4531
+Epoch: 090, Train Loss: 367.0649 (Recon: 366.0566, Class: 1.0083), Val Loss: 649.6483 (Recon: 648.6082, Class: 1.0400), Val Edge Acc: 0.4387
+Epoch: 091, Train Loss: 334.2698 (Recon: 333.2635, Class: 1.0063), Val Loss: 687.5757 (Recon: 686.5735, Class: 1.0022), Val Edge Acc: 0.4619
+Epoch: 092, Train Loss: 359.8525 (Recon: 358.8853, Class: 0.9672), Val Loss: 655.1281 (Recon: 654.0834, Class: 1.0447), Val Edge Acc: 0.4274
+Epoch: 093, Train Loss: 329.2414 (Recon: 328.2705, Class: 0.9709), Val Loss: 615.5527 (Recon: 614.5214, Class: 1.0314), Val Edge Acc: 0.4604
+Epoch: 094, Train Loss: 337.0235 (Recon: 336.0352, Class: 0.9883), Val Loss: 583.9612 (Recon: 582.9330, Class: 1.0282), Val Edge Acc: 0.4387
+Epoch: 095, Train Loss: 323.9065 (Recon: 322.9255, Class: 0.9810), Val Loss: 565.0831 (Recon: 564.0779, Class: 1.0052), Val Edge Acc: 0.4454
+Epoch: 096, Train Loss: 330.7927 (Recon: 329.7986, Class: 0.9942), Val Loss: 569.6241 (Recon: 568.6232, Class: 1.0009), Val Edge Acc: 0.4851
+Epoch: 097, Train Loss: 332.9341 (Recon: 331.9523, Class: 0.9818), Val Loss: 637.9378 (Recon: 636.9097, Class: 1.0281), Val Edge Acc: 0.4212
+Epoch: 098, Train Loss: 320.9521 (Recon: 319.9782, Class: 0.9739), Val Loss: 578.9606 (Recon: 577.9570, Class: 1.0036), Val Edge Acc: 0.4629
+Epoch: 099, Train Loss: 337.7570 (Recon: 336.7873, Class: 0.9697), Val Loss: 569.2781 (Recon: 568.2673, Class: 1.0107), Val Edge Acc: 0.4454
+Epoch: 100, Train Loss: 321.4945 (Recon: 320.5140, Class: 0.9806), Val Loss: 572.8521 (Recon: 571.8531, Class: 0.9989), Val Edge Acc: 0.4794
+Epoch: 101, Train Loss: 309.1158 (Recon: 308.1539, Class: 0.9619), Val Loss: 579.6544 (Recon: 578.6536, Class: 1.0008), Val Edge Acc: 0.4768
+Epoch: 102, Train Loss: 335.0908 (Recon: 334.1075, Class: 0.9833), Val Loss: 652.2068 (Recon: 651.2159, Class: 0.9909), Val Edge Acc: 0.4542
+Epoch: 103, Train Loss: 327.6865 (Recon: 326.7182, Class: 0.9683), Val Loss: 555.4495 (Recon: 554.4460, Class: 1.0035), Val Edge Acc: 0.4815
+Epoch: 104, Train Loss: 317.5145 (Recon: 316.5359, Class: 0.9787), Val Loss: 628.7957 (Recon: 627.7835, Class: 1.0122), Val Edge Acc: 0.4506
+Epoch: 105, Train Loss: 380.3463 (Recon: 379.3610, Class: 0.9853), Val Loss: 554.9937 (Recon: 554.0057, Class: 0.9881), Val Edge Acc: 0.4712
+Epoch: 106, Train Loss: 370.7433 (Recon: 369.7887, Class: 0.9546), Val Loss: 731.2321 (Recon: 730.2515, Class: 0.9806), Val Edge Acc: 0.4665
+Epoch: 107, Train Loss: 405.1453 (Recon: 404.1963, Class: 0.9490), Val Loss: 633.3297 (Recon: 632.3393, Class: 0.9904), Val Edge Acc: 0.4696
+Epoch: 108, Train Loss: 352.3044 (Recon: 351.3546, Class: 0.9497), Val Loss: 645.7999 (Recon: 644.8174, Class: 0.9826), Val Edge Acc: 0.4598
+Epoch: 109, Train Loss: 376.3586 (Recon: 375.4144, Class: 0.9441), Val Loss: 688.2407 (Recon: 687.2117, Class: 1.0290), Val Edge Acc: 0.4449
+Epoch: 110, Train Loss: 351.7888 (Recon: 350.8027, Class: 0.9861), Val Loss: 691.8027 (Recon: 690.7856, Class: 1.0171), Val Edge Acc: 0.4593
+Epoch: 111, Train Loss: 398.7853 (Recon: 397.8368, Class: 0.9485), Val Loss: 742.2131 (Recon: 741.0870, Class: 1.1260), Val Edge Acc: 0.3898
+Epoch: 112, Train Loss: 412.8489 (Recon: 411.7998, Class: 1.0491), Val Loss: 680.9756 (Recon: 679.8764, Class: 1.0992), Val Edge Acc: 0.4361
+Epoch: 113, Train Loss: 445.9581 (Recon: 444.9392, Class: 1.0188), Val Loss: 575.3369 (Recon: 574.2981, Class: 1.0387), Val Edge Acc: 0.4449
+Epoch: 114, Train Loss: 389.8868 (Recon: 388.8903, Class: 0.9966), Val Loss: 614.4245 (Recon: 613.3463, Class: 1.0782), Val Edge Acc: 0.4022
+Epoch: 115, Train Loss: 380.6899 (Recon: 379.6968, Class: 0.9932), Val Loss: 563.8943 (Recon: 562.8622, Class: 1.0322), Val Edge Acc: 0.4614
+Epoch: 116, Train Loss: 352.2111 (Recon: 351.2351, Class: 0.9761), Val Loss: 593.4846 (Recon: 592.4395, Class: 1.0451), Val Edge Acc: 0.4258
+Epoch: 117, Train Loss: 366.0802 (Recon: 365.1075, Class: 0.9727), Val Loss: 650.0179 (Recon: 648.9235, Class: 1.0944), Val Edge Acc: 0.4217
+Epoch: 118, Train Loss: 472.0708 (Recon: 471.0395, Class: 1.0313), Val Loss: 765.6569 (Recon: 764.5970, Class: 1.0598), Val Edge Acc: 0.4207
+Epoch: 119, Train Loss: 541.1186 (Recon: 540.1146, Class: 1.0040), Val Loss: 892.0363 (Recon: 891.0096, Class: 1.0267), Val Edge Acc: 0.4413
+Epoch: 120, Train Loss: 580.2352 (Recon: 579.2051, Class: 1.0301), Val Loss: 786.0767 (Recon: 785.0723, Class: 1.0044), Val Edge Acc: 0.4722
+Epoch: 121, Train Loss: 508.8443 (Recon: 507.8339, Class: 1.0104), Val Loss: 801.7607 (Recon: 800.7685, Class: 0.9922), Val Edge Acc: 0.4722
+Epoch: 122, Train Loss: 528.6362 (Recon: 527.6472, Class: 0.9890), Val Loss: 839.1270 (Recon: 838.1248, Class: 1.0022), Val Edge Acc: 0.4851
+Epoch: 123, Train Loss: 477.8077 (Recon: 476.8196, Class: 0.9881), Val Loss: 759.2726 (Recon: 758.2802, Class: 0.9925), Val Edge Acc: 0.4506
+Epoch: 124, Train Loss: 476.9036 (Recon: 475.9351, Class: 0.9685), Val Loss: 753.9230 (Recon: 752.9395, Class: 0.9835), Val Edge Acc: 0.4604
+Epoch: 125, Train Loss: 466.4938 (Recon: 465.5300, Class: 0.9637), Val Loss: 779.7480 (Recon: 778.7590, Class: 0.9890), Val Edge Acc: 0.4593
+Epoch: 126, Train Loss: 444.0338 (Recon: 443.0775, Class: 0.9563), Val Loss: 723.1620 (Recon: 722.1508, Class: 1.0113), Val Edge Acc: 0.4459
+Epoch: 127, Train Loss: 438.7578 (Recon: 437.7873, Class: 0.9706), Val Loss: 720.1214 (Recon: 719.1346, Class: 0.9868), Val Edge Acc: 0.4882
+Epoch: 128, Train Loss: 405.3689 (Recon: 404.4127, Class: 0.9562), Val Loss: 727.7467 (Recon: 726.7308, Class: 1.0158), Val Edge Acc: 0.4325
+Epoch: 129, Train Loss: 365.4699 (Recon: 364.4987, Class: 0.9712), Val Loss: 695.3964 (Recon: 694.3961, Class: 1.0003), Val Edge Acc: 0.4650
+Epoch: 130, Train Loss: 367.5109 (Recon: 366.5450, Class: 0.9659), Val Loss: 707.9100 (Recon: 706.9241, Class: 0.9859), Val Edge Acc: 0.4701
+Epoch: 131, Train Loss: 357.8450 (Recon: 356.8727, Class: 0.9722), Val Loss: 696.1611 (Recon: 695.1810, Class: 0.9800), Val Edge Acc: 0.4660
+Epoch: 132, Train Loss: 330.7116 (Recon: 329.7580, Class: 0.9536), Val Loss: 634.9501 (Recon: 633.9809, Class: 0.9693), Val Edge Acc: 0.4933
+Epoch: 133, Train Loss: 337.5341 (Recon: 336.5845, Class: 0.9496), Val Loss: 616.8611 (Recon: 615.8828, Class: 0.9784), Val Edge Acc: 0.4480
+Epoch: 134, Train Loss: 316.8455 (Recon: 315.9057, Class: 0.9398), Val Loss: 605.9331 (Recon: 604.9702, Class: 0.9629), Val Edge Acc: 0.4995
+Epoch: 135, Train Loss: 314.9017 (Recon: 313.9690, Class: 0.9328), Val Loss: 594.5895 (Recon: 593.6174, Class: 0.9721), Val Edge Acc: 0.5051
+Epoch: 136, Train Loss: 328.9466 (Recon: 328.0000, Class: 0.9466), Val Loss: 562.7910 (Recon: 561.8129, Class: 0.9781), Val Edge Acc: 0.4176
+Epoch: 137, Train Loss: 317.4439 (Recon: 316.5058, Class: 0.9381), Val Loss: 637.8522 (Recon: 636.8795, Class: 0.9727), Val Edge Acc: 0.5165
+Epoch: 138, Train Loss: 364.9121 (Recon: 363.9703, Class: 0.9418), Val Loss: 614.4161 (Recon: 613.4214, Class: 0.9947), Val Edge Acc: 0.4336
+Epoch: 139, Train Loss: 353.6827 (Recon: 352.7351, Class: 0.9476), Val Loss: 619.3293 (Recon: 618.3561, Class: 0.9732), Val Edge Acc: 0.5036
+Epoch: 140, Train Loss: 333.0225 (Recon: 332.0955, Class: 0.9269), Val Loss: 599.4805 (Recon: 598.4896, Class: 0.9909), Val Edge Acc: 0.4434
+Epoch: 141, Train Loss: 337.2933 (Recon: 336.3483, Class: 0.9450), Val Loss: 586.5258 (Recon: 585.5461, Class: 0.9797), Val Edge Acc: 0.4753
+Epoch: 142, Train Loss: 350.3736 (Recon: 349.3938, Class: 0.9798), Val Loss: 600.4926 (Recon: 599.5211, Class: 0.9715), Val Edge Acc: 0.4861
+Epoch: 143, Train Loss: 347.9857 (Recon: 347.0284, Class: 0.9573), Val Loss: 555.8861 (Recon: 554.9023, Class: 0.9839), Val Edge Acc: 0.4537
+Epoch: 144, Train Loss: 325.3610 (Recon: 324.4212, Class: 0.9398), Val Loss: 569.4863 (Recon: 568.5147, Class: 0.9716), Val Edge Acc: 0.4907
+Epoch: 145, Train Loss: 325.1005 (Recon: 324.1663, Class: 0.9342), Val Loss: 566.2108 (Recon: 565.2341, Class: 0.9766), Val Edge Acc: 0.4696
+Epoch: 146, Train Loss: 314.7611 (Recon: 313.8383, Class: 0.9228), Val Loss: 576.6783 (Recon: 575.7063, Class: 0.9720), Val Edge Acc: 0.4954
+Epoch: 147, Train Loss: 312.4659 (Recon: 311.5340, Class: 0.9318), Val Loss: 576.9532 (Recon: 575.9894, Class: 0.9638), Val Edge Acc: 0.4912
+Epoch: 148, Train Loss: 331.3627 (Recon: 330.4492, Class: 0.9134), Val Loss: 643.3091 (Recon: 642.3213, Class: 0.9878), Val Edge Acc: 0.4712
+Epoch: 149, Train Loss: 412.9673 (Recon: 412.0380, Class: 0.9293), Val Loss: 633.4317 (Recon: 632.4264, Class: 1.0053), Val Edge Acc: 0.4542
+Epoch: 150, Train Loss: 344.0927 (Recon: 343.1300, Class: 0.9628), Val Loss: 685.9155 (Recon: 684.9504, Class: 0.9651), Val Edge Acc: 0.4634
+Epoch: 151, Train Loss: 347.3162 (Recon: 346.3712, Class: 0.9451), Val Loss: 658.5524 (Recon: 657.5812, Class: 0.9712), Val Edge Acc: 0.4856
+Epoch: 152, Train Loss: 336.9962 (Recon: 336.0507, Class: 0.9456), Val Loss: 600.9503 (Recon: 599.9691, Class: 0.9811), Val Edge Acc: 0.4542
+Epoch: 153, Train Loss: 317.6859 (Recon: 316.7390, Class: 0.9469), Val Loss: 635.7546 (Recon: 634.8102, Class: 0.9445), Val Edge Acc: 0.4949
+Epoch: 154, Train Loss: 345.1022 (Recon: 344.1574, Class: 0.9448), Val Loss: 634.7832 (Recon: 633.7966, Class: 0.9866), Val Edge Acc: 0.4588
+Epoch: 155, Train Loss: 316.3203 (Recon: 315.3647, Class: 0.9556), Val Loss: 589.1473 (Recon: 588.1939, Class: 0.9535), Val Edge Acc: 0.4954
+Epoch: 156, Train Loss: 319.3713 (Recon: 318.3997, Class: 0.9716), Val Loss: 601.0190 (Recon: 600.0367, Class: 0.9823), Val Edge Acc: 0.4717
+Epoch: 157, Train Loss: 310.6925 (Recon: 309.7287, Class: 0.9638), Val Loss: 555.5237 (Recon: 554.5545, Class: 0.9693), Val Edge Acc: 0.4485
+Epoch: 158, Train Loss: 303.8304 (Recon: 302.8895, Class: 0.9409), Val Loss: 588.6025 (Recon: 587.6409, Class: 0.9616), Val Edge Acc: 0.4804
+Epoch: 159, Train Loss: 329.0998 (Recon: 328.1763, Class: 0.9235), Val Loss: 615.8627 (Recon: 614.9108, Class: 0.9518), Val Edge Acc: 0.4949
+Epoch: 160, Train Loss: 310.5167 (Recon: 309.5894, Class: 0.9274), Val Loss: 617.9849 (Recon: 617.0322, Class: 0.9527), Val Edge Acc: 0.4784
+Epoch: 161, Train Loss: 317.1820 (Recon: 316.2576, Class: 0.9245), Val Loss: 593.0999 (Recon: 592.1320, Class: 0.9679), Val Edge Acc: 0.4933
+Epoch: 162, Train Loss: 332.2965 (Recon: 331.3633, Class: 0.9332), Val Loss: 633.4816 (Recon: 632.4873, Class: 0.9943), Val Edge Acc: 0.4547
+Epoch: 163, Train Loss: 331.7114 (Recon: 330.7307, Class: 0.9807), Val Loss: 593.6682 (Recon: 592.6670, Class: 1.0011), Val Edge Acc: 0.4640
+Epoch: 164, Train Loss: 314.7663 (Recon: 313.7819, Class: 0.9844), Val Loss: 616.0859 (Recon: 615.0963, Class: 0.9896), Val Edge Acc: 0.4614
+Epoch: 165, Train Loss: 329.7371 (Recon: 328.7676, Class: 0.9695), Val Loss: 594.2301 (Recon: 593.2643, Class: 0.9658), Val Edge Acc: 0.4758
+Epoch: 166, Train Loss: 330.8878 (Recon: 329.9443, Class: 0.9435), Val Loss: 602.4197 (Recon: 601.4650, Class: 0.9547), Val Edge Acc: 0.4748
+Epoch: 167, Train Loss: 296.0871 (Recon: 295.1567, Class: 0.9304), Val Loss: 601.3475 (Recon: 600.4008, Class: 0.9467), Val Edge Acc: 0.4918
+Epoch: 168, Train Loss: 325.8552 (Recon: 324.9186, Class: 0.9366), Val Loss: 590.4727 (Recon: 589.5297, Class: 0.9429), Val Edge Acc: 0.4902
+Epoch: 169, Train Loss: 318.5047 (Recon: 317.5915, Class: 0.9132), Val Loss: 589.0972 (Recon: 588.1495, Class: 0.9477), Val Edge Acc: 0.5057
+Epoch: 170, Train Loss: 356.5837 (Recon: 355.6530, Class: 0.9307), Val Loss: 661.0458 (Recon: 660.0991, Class: 0.9466), Val Edge Acc: 0.4861
+Epoch: 171, Train Loss: 334.5729 (Recon: 333.6440, Class: 0.9289), Val Loss: 618.6777 (Recon: 617.7324, Class: 0.9453), Val Edge Acc: 0.4773
+Epoch: 172, Train Loss: 336.4165 (Recon: 335.4995, Class: 0.9171), Val Loss: 619.6447 (Recon: 618.6655, Class: 0.9792), Val Edge Acc: 0.4542
+Epoch: 173, Train Loss: 394.4926 (Recon: 393.5642, Class: 0.9284), Val Loss: 705.4018 (Recon: 704.4589, Class: 0.9430), Val Edge Acc: 0.4825
+Epoch: 174, Train Loss: 362.9039 (Recon: 361.9787, Class: 0.9252), Val Loss: 700.4839 (Recon: 699.5336, Class: 0.9503), Val Edge Acc: 0.4959
+Epoch: 175, Train Loss: 355.4757 (Recon: 354.5563, Class: 0.9194), Val Loss: 727.6978 (Recon: 726.7430, Class: 0.9548), Val Edge Acc: 0.4614
+Epoch: 176, Train Loss: 315.3348 (Recon: 314.4335, Class: 0.9013), Val Loss: 665.9566 (Recon: 665.0127, Class: 0.9439), Val Edge Acc: 0.5051
+Epoch: 177, Train Loss: 317.9534 (Recon: 317.0315, Class: 0.9219), Val Loss: 659.4764 (Recon: 658.4894, Class: 0.9870), Val Edge Acc: 0.4398
+Epoch: 178, Train Loss: 327.8398 (Recon: 326.9038, Class: 0.9359), Val Loss: 646.0114 (Recon: 644.9850, Class: 1.0263), Val Edge Acc: 0.4526
+Epoch: 179, Train Loss: 338.8455 (Recon: 337.8829, Class: 0.9627), Val Loss: 611.2719 (Recon: 610.3126, Class: 0.9592), Val Edge Acc: 0.4650
+Epoch: 180, Train Loss: 327.8784 (Recon: 326.9757, Class: 0.9027), Val Loss: 709.1653 (Recon: 708.1943, Class: 0.9710), Val Edge Acc: 0.4866
+Epoch: 181, Train Loss: 311.8829 (Recon: 310.9692, Class: 0.9137), Val Loss: 611.1158 (Recon: 610.1533, Class: 0.9626), Val Edge Acc: 0.4768
+Epoch: 182, Train Loss: 297.3564 (Recon: 296.4397, Class: 0.9167), Val Loss: 721.4505 (Recon: 720.5172, Class: 0.9333), Val Edge Acc: 0.5021
+Epoch: 183, Train Loss: 325.6048 (Recon: 324.7032, Class: 0.9016), Val Loss: 586.6568 (Recon: 585.7220, Class: 0.9348), Val Edge Acc: 0.5124
+Epoch: 184, Train Loss: 318.5581 (Recon: 317.6485, Class: 0.9096), Val Loss: 617.1165 (Recon: 616.1630, Class: 0.9535), Val Edge Acc: 0.4804
+Epoch: 185, Train Loss: 368.7225 (Recon: 367.8007, Class: 0.9217), Val Loss: 762.2355 (Recon: 761.2208, Class: 1.0148), Val Edge Acc: 0.4413
+Epoch: 186, Train Loss: 350.8005 (Recon: 349.8715, Class: 0.9290), Val Loss: 675.9300 (Recon: 674.9594, Class: 0.9706), Val Edge Acc: 0.4686
+Epoch: 187, Train Loss: 360.1619 (Recon: 359.2453, Class: 0.9166), Val Loss: 708.3726 (Recon: 707.4043, Class: 0.9683), Val Edge Acc: 0.4887
+Epoch: 188, Train Loss: 388.5176 (Recon: 387.5942, Class: 0.9234), Val Loss: 704.4086 (Recon: 703.4379, Class: 0.9707), Val Edge Acc: 0.4583
+Epoch: 189, Train Loss: 407.2723 (Recon: 406.3321, Class: 0.9402), Val Loss: 763.7484 (Recon: 762.7195, Class: 1.0288), Val Edge Acc: 0.4459
+Epoch: 190, Train Loss: 356.2456 (Recon: 355.2892, Class: 0.9565), Val Loss: 635.1404 (Recon: 634.1519, Class: 0.9885), Val Edge Acc: 0.4284
+Epoch: 191, Train Loss: 356.5334 (Recon: 355.6173, Class: 0.9160), Val Loss: 626.1428 (Recon: 625.1433, Class: 0.9995), Val Edge Acc: 0.4794
+Epoch: 192, Train Loss: 364.8532 (Recon: 363.8887, Class: 0.9645), Val Loss: 633.7466 (Recon: 632.7239, Class: 1.0228), Val Edge Acc: 0.4186
+Epoch: 193, Train Loss: 339.4308 (Recon: 338.5000, Class: 0.9309), Val Loss: 724.5615 (Recon: 723.4886, Class: 1.0728), Val Edge Acc: 0.4089
+Epoch: 194, Train Loss: 369.3380 (Recon: 368.3480, Class: 0.9900), Val Loss: 644.3221 (Recon: 643.2287, Class: 1.0934), Val Edge Acc: 0.4464
+Epoch: 195, Train Loss: 369.8652 (Recon: 368.8737, Class: 0.9915), Val Loss: 618.5764 (Recon: 617.5380, Class: 1.0385), Val Edge Acc: 0.3991
+Epoch: 196, Train Loss: 328.2429 (Recon: 327.2640, Class: 0.9789), Val Loss: 619.6124 (Recon: 618.6065, Class: 1.0059), Val Edge Acc: 0.4773
+Epoch: 197, Train Loss: 334.2619 (Recon: 333.3005, Class: 0.9614), Val Loss: 623.1176 (Recon: 622.1704, Class: 0.9471), Val Edge Acc: 0.4964
+Epoch: 198, Train Loss: 340.9073 (Recon: 339.9429, Class: 0.9644), Val Loss: 635.9169 (Recon: 634.9765, Class: 0.9404), Val Edge Acc: 0.4882
+Epoch: 199, Train Loss: 331.8291 (Recon: 330.8629, Class: 0.9662), Val Loss: 616.3080 (Recon: 615.3105, Class: 0.9975), Val Edge Acc: 0.4681
+Epoch: 200, Train Loss: 308.3834 (Recon: 307.4466, Class: 0.9368), Val Loss: 598.1081 (Recon: 597.1049, Class: 1.0032), Val Edge Acc: 0.4413
+--- Training Finished ---
+
+
+
+    *   **学習曲線グラフ:**
+        *   （ご提供いただいた `input_file_0.png` をリポジトリに保存し、ファイルに埋め込む）
+        ![学習曲線](./path/to/input_file_0.png)
+*   **考察と次のアクション:**
+    *   **知見:**
+        *   学習パイプラインは正常に機能し、モデルは収束傾向を示した。
+        *   損失の大部分（99%以上）を再構築損失（Recon Loss）が占めており、分類タスクの学習が進んでいないことが示唆される。これがEdge Accuracyが停滞する主要因と考えられる。
+    *   **決定:** 次の実験(`exp_002`)では、Recon Lossの重み(`LAMBDA_RECON`)を`0.01`に下げ、分類タスクへの学習を促す。
+
+#### 2. **データセット (`data/`)**
+
+*   **現状:** 36個の`.fold`ファイルはローカルにある状態だと思います。
+*   **推奨:** 可能であれば、この36個のファイルを圧縮（.zip）し、**リポジトリの`Releases`機能を使ってアップロード**するか、あるいはGoogle Drive等で共有し、そのリンクをREADMEに記載しておくと、誰でも（未来のあなた自身も）同じデータで実験を再現できるようになります。
+    *   `data/README.md` を作成し、「このデータセットはv1.0であり、36個の折り紙モデルを含む」といった説明を記述します。
+    
+0000_example.fold                       0009_pony.fold                          0018_pig.fold                           1003_canoe.fold
+0001_crane.fold                         0010_boar.fold                          0019_chameleon.fold                     1004_medal.fold
+0002_pig.fold                           0011_lion.fold                          0020_dragon.fold                        1005_dahlia.fold
+0003_bird.fold                          0012_frog.fold                          0021_fox.fold                           1006_sun.fold
+0004_penguin.fold                       0013_sardine.fold                       0022_horned_owl.fold                    2001_miura.fold
+0005_dragon.fold                        0014_frog.fold                          0023_sepia.fold                         2002_scale.fold
+0006_dog.fold                           0015_rooster.fold                       0024_swan.fold                          3001_whitetail_doe.fold
+0007_tuna.fold                          0016_giraffe.fold                       1001_rose.fold                          3002_sword_and_shield_person.fold
+0008_pig.fold                           0017_mouse.fold                         1002_heart.fold                         3003_human.fold
+
+---
