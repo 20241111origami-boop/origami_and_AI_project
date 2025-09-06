@@ -103,6 +103,49 @@ def check_improper_edge_intersections(vertices_coords, edges_vertices):
     return errors if errors else None
 
 
+def check_boundary_edges_on_frame(vertices_coords, edges_vertices, edges_assignment, x_range=(-200, 200), y_range=(-200, 200)):
+    """
+    境界線("B")が、指定された矩形領域の枠線と完全に一致する
+    水平線または垂直線であることを検証する（シナリオB: 厳格ルール）。
+    """
+    errors = []
+    x_max = max(abs(x_range[0]), abs(x_range[1]))
+    y_max = max(abs(y_range[0]), abs(y_range[1]))
+
+    for i, assignment in enumerate(edges_assignment):
+        if assignment == "B":
+            v1_idx, v2_idx = edges_vertices[i]
+            x1, y1 = vertices_coords[v1_idx]
+            x2, y2 = vertices_coords[v2_idx]
+
+            # 条件1: 垂直な枠線か？
+            is_vertical_frame_edge = (
+                math.isclose(x1, x2, rel_tol=EPSILON, abs_tol=EPSILON) and
+                math.isclose(abs(x1), x_max, rel_tol=EPSILON, abs_tol=EPSILON)
+            )
+
+            # 条件2: 水平な枠線か？
+            is_horizontal_frame_edge = (
+                math.isclose(y1, y2, rel_tol=EPSILON, abs_tol=EPSILON) and
+                math.isclose(abs(y1), y_max, rel_tol=EPSILON, abs_tol=EPSILON)
+            )
+
+            # どちらの条件も満たさない場合はエラー
+            if not (is_vertical_frame_edge or is_horizontal_frame_edge):
+                errors.append({
+                    "type": "BoundaryEdgeNotOnFrame",
+                    "message": f"Boundary edge {i} ({v1_idx}-{v2_idx}) is not a valid horizontal or vertical segment on the frame.",
+                    "context": {
+                        "edge_index": i,
+                        "vertex_indices": [v1_idx, v2_idx],
+                        "coords": [[x1, y1], [x2, y2]],
+                        "expected_frame": f"A vertical line on x=±{x_max} or a horizontal line on y=±{y_max}"
+                    }
+                })
+    
+    return errors if errors else None
+
+
 
 def check_vertices_within_boundary(vertices_coords, x_range=(-200, 200), y_range=(-200, 200)):
     """
@@ -481,7 +524,6 @@ def check_generalized_blb_lemma(ordered_half_edges, vertex_index):
     return None # 全てのシーケンスがルールを満たした
 
 
-
 def validate_fold_file(file_path):
     """
     .foldファイルを読み込み、平坦折り畳み可能性のルールを検証する。
@@ -511,6 +553,15 @@ def validate_fold_file(file_path):
     if boundary_errors:
         global_errors.extend(boundary_errors)
 
+    # --- ▼▼▼ 追加 ▼▼▼ ---
+    if len(global_errors) < MAX_ERRORS_TO_REPORT:
+        frame_errors = check_boundary_edges_on_frame(
+            vertices_coords, edges_vertices, edges_assignment
+        )
+        if frame_errors:
+            global_errors.extend(frame_errors)
+    # --- ▲▲▲ 追加 ▲▲▲ ---
+
     # 交差判定はコストが高い可能性があるため、エラー上限に達していなければ実行
     if len(global_errors) < MAX_ERRORS_TO_REPORT:
         intersection_errors = check_improper_edge_intersections(vertices_coords, edges_vertices)
@@ -523,7 +574,7 @@ def validate_fold_file(file_path):
         return {"valid": False, "errors": errors[:MAX_ERRORS_TO_REPORT]}
 
     # --- 優先度2 & 3: 頂点ごとのチェック ---
-    # (大域的エラーがなかった場合のみ、このループが実行される)
+    # (以降のコードは変更なし)
     for i in range(len(vertices_coords)):
         
         # --- 優先度2: 局所的・幾何学的健全性チェック (Level 0-L) ---
@@ -548,7 +599,6 @@ def validate_fold_file(file_path):
             continue
 
         # --- 優先度3: 平坦折り畳み可能性の必要条件チェック (Level 1) ---
-        # (Level 0-Lエラーがなく、境界頂点でもない場合のみ実行)
         if assignments.count("B") > 0:
             continue
 
@@ -571,6 +621,8 @@ def validate_fold_file(file_path):
     return {"valid": True, "errors": []}
 
 
+
+    
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: python validator_v4.py <path_to_fold_file>")
