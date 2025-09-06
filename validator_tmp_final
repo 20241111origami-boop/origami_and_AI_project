@@ -4,7 +4,7 @@ import sys
 from collections import defaultdict, namedtuple
 import itertools
 
-
+MAX_ERRORS_TO_REPORT = 10
 EPSILON = 1e-9
 def get_connected_edges_assignments(vertex_index, edges_vertices, edges_assignment):
     """指定された頂点に接続するエッジの種類（山折り、谷折りなど）を取得する"""
@@ -13,45 +13,6 @@ def get_connected_edges_assignments(vertex_index, edges_vertices, edges_assignme
         if vertex_index in edge:
             assignments.append(edges_assignment[i])
     return assignments
-
-
-def get_angles_around_vertex(vertex_index, vertices_coords, edges_vertices):
-    """指定された頂点の周りの角度を計算してリストで返す"""
-    center_point = vertices_coords[vertex_index]
-    
-    # 頂点に接続する他の頂点の座標を取得
-    connected_points = []
-    for edge in edges_vertices:
-        if edge[0] == vertex_index:
-            connected_points.append(vertices_coords[edge[1]])
-        elif edge[1] == vertex_index:
-            connected_points.append(vertices_coords[edge[0]])
-
-    if len(connected_points) < 2:
-        return []
-
-    # 各点と中心点との角度を計算
-    angles_points = []
-    for p in connected_points:
-        angle = math.atan2(p[1] - center_point[1], p[0] - center_point[0])
-        angles_points.append((angle, p))
-    
-    # 角度でソート
-    angles_points.sort()
-
-    # ソートされた点の間（セクター）の角度を計算
-    sector_angles = []
-    num_points = len(angles_points)
-    for i in range(num_points):
-        angle1, _ = angles_points[i]
-        angle2, _ = angles_points[(i + 1) % num_points]
-        diff = angle2 - angle1
-        # 角度が負になる場合（360度をまたぐ場合）は2πを足す
-        if diff < 0:
-            diff += 2 * math.pi
-        sector_angles.append(diff)
-        
-    return sector_angles
 
 
 # 頂点周りのエッジ情報を格納するためのデータ構造
@@ -519,13 +480,12 @@ def check_generalized_blb_lemma(ordered_half_edges, vertex_index):
     
     return None # 全てのシーケンスがルールを満たした
 
-# validator.py の先頭に追加
 
-# --- validate_fold_file 関数を以下のように修正 ---
 
 def validate_fold_file(file_path):
     """
-    .foldファイルを読み込み、平坦折り畳み可能性のルールを検証する (最終版)
+    .foldファイルを読み込み、平坦折り畳み可能性のルールを検証する。
+    エラー報告の総数を制限し、階層的な早期打ち切りを行う。
     """
     try:
         with open(file_path, 'r') as f:
@@ -544,62 +504,71 @@ def validate_fold_file(file_path):
     
     errors = []
 
-    # --- レベル0-Global: 全体的な幾何学的健全性チェック ---
+    # --- 優先度1: 大域的・幾何学的健全性チェック (Level 0-G) ---
     global_errors = []
     
-    # [新規] 頂点が境界内に収まっているか
     boundary_errors = check_vertices_within_boundary(vertices_coords)
-    if boundary_errors: global_errors.extend(boundary_errors)
+    if boundary_errors:
+        global_errors.extend(boundary_errors)
 
-    # [新規] エッジが不適切に交差していないか
-    intersection_errors = check_improper_edge_intersections(vertices_coords, edges_vertices)
-    if intersection_errors: global_errors.extend(intersection_errors)
+    # 交差判定はコストが高い可能性があるため、エラー上限に達していなければ実行
+    if len(global_errors) < MAX_ERRORS_TO_REPORT:
+        intersection_errors = check_improper_edge_intersections(vertices_coords, edges_vertices)
+        if intersection_errors:
+            global_errors.extend(intersection_errors)
     
     if global_errors:
-        # 大域的なエラーがあれば、頂点ごとのチェックは行わずに終了
-        return {"valid": False, "errors": global_errors}
+        # 大域的エラーが見つかった場合、それを上限まで追加し、即座に終了する
+        errors.extend(global_errors)
+        return {"valid": False, "errors": errors[:MAX_ERRORS_TO_REPORT]}
 
-    # --- 各頂点についてループ (既存のチェック) ---
+    # --- 優先度2 & 3: 頂点ごとのチェック ---
+    # (大域的エラーがなかった場合のみ、このループが実行される)
     for i in range(len(vertices_coords)):
-        # --- レベル0-Local: 頂点周りの基本的な健全性チェック ---
+        
+        # --- 優先度2: 局所的・幾何学的健全性チェック (Level 0-L) ---
+        local_geom_errors = []
         assignments = get_connected_edges_assignments(i, edges_vertices, edges_assignment)
         
-        error = check_boundary_count(assignments, i)
-        if error:
-            errors.append(error)
-            continue # この頂点の以降のチェックはスキップ
+        err = check_boundary_count(assignments, i)
+        if err: local_geom_errors.append(err)
 
         ordered_half_edges = get_ordered_half_edges(i, vertices_coords, edges_vertices, edges_assignment)
         if not ordered_half_edges:
-            continue
+            continue # 接続辺がなければチェック不要
         
-        error = check_overlapping_creases(ordered_half_edges, i)
-        if error:
-            errors.append(error)
+        err = check_overlapping_creases(ordered_half_edges, i)
+        if err: local_geom_errors.append(err)
+
+        if local_geom_errors:
+            errors.extend(local_geom_errors)
+            if len(errors) >= MAX_ERRORS_TO_REPORT:
+                return {"valid": False, "errors": errors[:MAX_ERRORS_TO_REPORT]}
+            # この頂点のLevel 1チェックはスキップ
             continue
 
-        # 境界頂点(Bの数が2)の場合、内点向けの定理は適用しない
+        # --- 優先度3: 平坦折り畳み可能性の必要条件チェック (Level 1) ---
+        # (Level 0-Lエラーがなく、境界頂点でもない場合のみ実行)
         if assignments.count("B") > 0:
             continue
 
-        # --- レベル1: 内点向けの必要条件チェック ---
-        level1_errors = []
-        level1_errors.append(check_maekawa_theorem(assignments, i))
+        level1_checks = [
+            check_maekawa_theorem(assignments, i),
+            check_kawasaki_theorem([he.sector_angle for he in ordered_half_edges], i),
+            check_big_little_big_theorem(ordered_half_edges, i),
+            check_generalized_blb_lemma(ordered_half_edges, i)
+        ]
         
-        sector_angles_rad = [he.sector_angle for he in ordered_half_edges]
-        level1_errors.append(check_kawasaki_theorem(sector_angles_rad, i))
-        level1_errors.append(check_big_little_big_theorem(ordered_half_edges, i))
-        level1_errors.append(check_generalized_blb_lemma(ordered_half_edges, i))
-        
-        level1_errors = [e for e in level1_errors if e is not None]
-        if level1_errors:
-            errors.extend(level1_errors)
+        for error in level1_checks:
+            if error:
+                errors.append(error)
+                if len(errors) >= MAX_ERRORS_TO_REPORT:
+                    return {"valid": False, "errors": errors[:MAX_ERRORS_TO_REPORT]}
 
     if errors:
-        return {"valid": False, "errors": errors}
+        return {"valid": False, "errors": errors[:MAX_ERRORS_TO_REPORT]}
     
     return {"valid": True, "errors": []}
-
 
 
 if __name__ == '__main__':
