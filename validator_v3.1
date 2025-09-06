@@ -2,199 +2,9 @@ import json
 import math
 import sys
 from collections import defaultdict, namedtuple
-from enum import Enum
 
 
 EPSILON = 1e-9
-
-# --- 要件定義に従った新しいデータ構造の追加 ---
-import math
-from enum import Enum
-
-
-
-import math
-from enum import Enum
-
-# --- データ構造定義 ---
-
-class LineType(Enum):
-    MOUNTAIN = "M"
-    VALLEY = "V"
-    UNASSIGNED = "U"
-
-    @classmethod
-    def from_string(cls, s: str):
-        """文字列からLineType enumを取得する"""
-        if s == "M": return cls.MOUNTAIN
-        if s == "V": return cls.VALLEY
-        return cls.UNASSIGNED
-
-class AngleGap:
-    """角度と折り線タイプを保持するデータクラス"""
-    def __init__(self, angle: float, line_type: LineType):
-        self.angle = angle
-        self.line_type = line_type
-
-    def __repr__(self):
-        return f"AngleGap(angle={math.degrees(self.angle):.1f}, type='{self.line_type.value}')"
-
-class Node:
-    """リングの各要素を表すノード。安定したIDを持つ。"""
-    def __init__(self, value: AngleGap, node_id: int):
-        self.value = value
-        self.id = node_id
-        self.next = None
-        self.prev = None
-
-class Ring:
-    """連結リストに基づいたリング構造。要素を削除してもIDは不変。"""
-    def __init__(self, gaps: list[AngleGap]):
-        self.nodes = {}
-        if not gaps: return
-        node_list = [Node(gap, i) for i, gap in enumerate(gaps)]
-        for i, node in enumerate(node_list):
-            self.nodes[i] = node
-            node.prev = node_list[(i - 1 + len(node_list)) % len(node_list)]
-            node.next = node_list[(i + 1) % len(node_list)]
-
-    def __len__(self):
-        return len(self.nodes)
-
-    def get_node(self, node_id: int) -> Node | None:
-        return self.nodes.get(node_id)
-
-    def drop_connection(self, node_id: int):
-        if node_id not in self.nodes: return
-        node_to_remove = self.nodes.pop(node_id)
-        prev_node, next_node = node_to_remove.prev, node_to_remove.next
-        prev_node.next, next_node.prev = next_node, prev_node
-
-    def get_all_nodes(self) -> list[Node]:
-        return list(self.nodes.values())
-
-# --- アルゴリズム本体 ---
-
-class VertexFoldabilityChecker:
-    """頂点の折りたたみ可能性を検証する最終版クラス"""
-    EPSILON = 1e-9
-
-    @staticmethod
-    def is_minimal(ring: Ring, node_id: int) -> bool:
-        node = ring.get_node(node_id)
-        if not node: return False
-        is_lefter = node.value.angle < node.prev.value.angle or math.isclose(node.value.angle, node.prev.value.angle, rel_tol=VertexFoldabilityChecker.EPSILON)
-        is_righter = node.value.angle < node.next.value.angle or math.isclose(node.value.angle, node.next.value.angle, rel_tol=VertexFoldabilityChecker.EPSILON)
-        return is_lefter and is_righter
-
-    @staticmethod
-    def check(gaps: list[AngleGap]) -> bool:
-        """アルゴリズムの本体。AngleGapのリストを受け取る。"""
-        ring = Ring(gaps)
-        minimal_indices = {node.id for node in ring.get_all_nodes() if VertexFoldabilityChecker.is_minimal(ring, node.id)}
-
-        while len(ring) > 2:
-            if not minimal_indices: return False
-            target_id = minimal_indices.pop()
-            
-            target_node = ring.get_node(target_id)
-            if not target_node: continue
-            
-            prev_node, next_node = target_node.prev, target_node.next
-            prev_node.value.angle += next_node.value.angle - target_node.value.angle
-
-            minimal_indices.discard(prev_node.id)
-            minimal_indices.discard(next_node.id)
-
-            ring.drop_connection(target_node.id)
-            ring.drop_connection(next_node.id)
-            
-            if len(ring) <= 2: break
-
-            nodes_to_recheck = {prev_node, prev_node.prev, prev_node.next}
-            for node in nodes_to_recheck:
-                if VertexFoldabilityChecker.is_minimal(ring, node.id):
-                    minimal_indices.add(node.id)
-                else:
-                    minimal_indices.discard(node.id)
-
-        if len(ring) == 2:
-            node1, node2 = ring.get_all_nodes()
-            return (math.isclose(node1.value.angle, node2.value.angle, rel_tol=VertexFoldabilityChecker.EPSILON) and
-                    node1.value.line_type == node2.value.line_type)
-        if len(ring) == 0: return True
-        return False
-
-    @staticmethod
-    def check_from_half_edges(ordered_half_edges, vertex_index):
-        """
-        HalfEdgeのリストを受け取り、それをAngleGapに変換してチェックを実行するブリッジメソッド。
-        """
-        # UNASSIGNEDが含まれていれば、編集中のため常にTrueとみなす
-        if any(he.assignment == "U" for he in ordered_half_edges):
-            return True
-
-        # HalfEdgeからAngleGapのリストへ変換
-        gaps = []
-        for he in ordered_half_edges:
-            angle = he.sector_angle
-            line_type = LineType.from_string(he.assignment)
-            gaps.append(AngleGap(angle, line_type))
-        
-        # 変換したデータで、コアとなるチェックメソッドを呼び出す
-        return VertexFoldabilityChecker.check(gaps)
-
-
-# --- 既存のコードとの統合用ラッパー関数（変更不要） ---
-
-def check_folding_simulation_fixed(ordered_half_edges, vertex_index):
-    """
-    修正版の折りたたみシミュレーション
-    要件定義に従った実装を使用
-    """
-    # VertexFoldabilityCheckerの新しいブリッジメソッドを呼び出す
-    is_foldable = VertexFoldabilityChecker.check_from_half_edges(ordered_half_edges, vertex_index)
-    
-    if not is_foldable:
-        return {
-            "type": "FoldingSimulation",
-            "vertex": vertex_index,
-            "message": f"Vertex {vertex_index}: Folding simulation failed. Vertex is not locally flat-foldable.",
-            "context": {
-                "failure_reason": "NOT_FLAT_FOLDABLE",
-                "used_algorithm": "Eric_Demaine_Algorithm"
-            }
-        }
-    
-    return None  # 成功
-
-# --- 実行例 ---
-
-# テストのためのダミークラス
-class HalfEdge:
-    def __init__(self, angle_deg, assignment_str):
-        self.sector_angle = math.radians(angle_deg)
-        self.assignment = assignment_str
-
-# 問題の「山、山、谷、山」パターンをHalfEdgeで作成
-# 順番: E1(M), E2(M), E3(V), E4(M)
-# Gapは「直後」の線の種類を持つので、AngleGapのリストは (M, M, V, M) となる
-test_half_edges = [
-    HalfEdge(90, "M"), # sector E4-E1, line E1 is M
-    HalfEdge(90, "M"), # sector E1-E2, line E2 is M
-    HalfEdge(90, "V"), # sector E2-E3, line E3 is V
-    HalfEdge(90, "M"), # sector E3-E4, line E4 is M
-]
-
-# ラッパー関数を実行
-error_report = check_folding_simulation_fixed(test_half_edges, vertex_index=4)
-
-if error_report is None:
-    print("検証結果: 成功！この頂点は平坦に折りたためます。")
-else:
-    print(f"検証結果: 失敗...\n{error_report}")
-# --- 既存の関数（変更なし） ---
-
 def get_connected_edges_assignments(vertex_index, edges_vertices, edges_assignment):
     """指定された頂点に接続するエッジの種類（山折り、谷折りなど）を取得する"""
     assignments = []
@@ -250,6 +60,8 @@ HalfEdge = namedtuple('HalfEdge', [
     'assignment',        # "M", "V", "B" などの種類
     'edge_indices_tuple' # (中心頂点, 接続先頂点)
 ])
+
+
 
 def get_ordered_half_edges(vertex_index, vertices_coords, edges_vertices, edges_assignment):
     """
@@ -322,6 +134,7 @@ def check_boundary_count(assignments, vertex_index):
     return None
 
 
+# --- ここから新しいコードを追加 ---
 def check_overlapping_creases(ordered_half_edges, vertex_index):
     """
     頂点から伸びる折り線が幾何学的に重複していないかを検証する。
@@ -352,7 +165,6 @@ def check_overlapping_creases(ordered_half_edges, vertex_index):
                 }
             }
     return None
-
 def check_maekawa_theorem(assignments, vertex_index):
     """前川の定理を検証する: |M - V| = 2"""
     m_count = assignments.count("M")
@@ -401,6 +213,7 @@ def check_kawasaki_theorem(angles, vertex_index):
     return None
 
 
+# --- この関数を既存の check_big_little_big_theorem と置き換える ---
 def check_big_little_big_theorem(ordered_half_edges, vertex_index):
     """
     Big-Little-Big定理から導かれる局所的な条件を検証する。
@@ -460,120 +273,137 @@ def check_big_little_big_theorem(ordered_half_edges, vertex_index):
     # 全ての局所最小角でルールが満たされた
     return None
 
-def check_generalized_blb_lemma(ordered_half_edges, vertex_index):
-    """
-    一般化された大小大の補題（Generalized Big-Little-Big Lemma）を検証する。
-    """
-    # ステップ1: 適用除外条件の事前判定 (上位で実施済みと想定)
-    # BORDERやUNASSIGNEDが含まれていないことを前提とする
 
+
+# --- 元の check_generalized_blb_lemma を以下の3つの関数に置き換える ---
+
+def find_equal_angle_sequences(sector_angles):
+    """
+    角度のリストから、連続する等しい角度のシーケンスを特定する。
+    戻り値: [(開始インデックス, シーケンスの長さ), ...] のリスト
+    """
+    num_angles = len(sector_angles)
+    if num_angles == 0:
+        return []
+
+    sequences = []
+    visited = [False] * num_angles
+    
+    # 1周して全ての角度が等しいかチェック
+    all_equal = True
+    for i in range(1, num_angles):
+        if not math.isclose(sector_angles[0], sector_angles[i], rel_tol=EPSILON, abs_tol=EPSILON):
+            all_equal = False
+            break
+    if all_equal:
+        return [] # 全ての角度が等しい場合、補題は適用されない
+
+    for i in range(num_angles):
+        if visited[i]:
+            continue
+            
+        # iから始まる等角シーケンスを探索
+        seq_length = 1
+        j = i
+        
+        while math.isclose(sector_angles[j], sector_angles[(j + 1) % num_angles], rel_tol=EPSILON, abs_tol=EPSILON):
+            seq_length += 1
+            j = (j + 1) % num_angles
+            visited[j] = True
+        
+        # シーケンス長が1より大きい（＝等角が連続している）場合のみ追加
+        if seq_length > 1:
+            sequences.append((i, seq_length))
+
+    return sequences
+
+
+def validate_blb_sequence(ordered_half_edges, vertex_index, seq_start, seq_length):
+    """特定された一つの等角シーケンスに対して、補題のルールを検証する"""
     num_edges = len(ordered_half_edges)
-    if num_edges < 3:
-        return None # 3辺未満ではシーケンスが形成されない
-
     sector_angles = [he.sector_angle for he in ordered_half_edges]
 
-    # ステップ3: 等角シーケンスの特定と適用可否の判定
-    i = 0
-    while i < num_edges:
-        # 等角シーケンスを探す
-        j = i
-        while math.isclose(sector_angles[j], sector_angles[(j + 1) % num_edges], rel_tol=EPSILON, abs_tol=EPSILON):
-            j = (j + 1) % num_edges
-            if j == (i - 1 + num_edges) % num_edges: # 1周してしまった(全角が等しい)
-                return None # この補題は適用されない
+    # シーケンスの前後の角度を取得
+    seq_end = (seq_start + seq_length - 1) % num_edges
+    alpha_s = sector_angles[seq_start]
+    alpha_prev = sector_angles[(seq_start - 1 + num_edges) % num_edges]
+    alpha_next = sector_angles[(seq_end + 1) % num_edges]
 
-        if i == j: # シーケンス長が1ならスキップ
-            i += 1
-            continue
+    # 適用条件のチェック: α_prev > α_s AND α_next > α_s
+    if (alpha_prev - alpha_s > EPSILON) and (alpha_next - alpha_s > EPSILON):
+        # seq_length個の角度は、seq_length + 1本のエッジで形成される
+        edge_count = seq_length + 1
+        mountain_count = 0
+        valley_count = 0
 
-        # シーケンスSを特定
-        # Pythonのスライスと違い、循環インデックスを扱う
-        sequence_indices = []
-        curr = i
-        while True:
-            sequence_indices.append(curr)
-            if curr == j: break
-            curr = (curr + 1) % num_edges
+        # 該当するエッジの山・谷を数える
+        for k in range(edge_count):
+            edge_idx = (seq_start + k) % num_edges
+            assignment = ordered_half_edges[edge_idx].assignment
+            if assignment == "M":
+                mountain_count += 1
+            elif assignment == "V":
+                valley_count += 1
         
-        # 適用前件(precondition)の確認
-        alpha_s = sector_angles[i]
-        alpha_prev_idx = (i - 1 + num_edges) % num_edges
-        alpha_next_idx = (j + 1) % num_edges
+        # ルール検証
+        error_condition = None
+        if edge_count % 2 == 0: # 偶数本
+            if mountain_count != valley_count:
+                error_condition = "mountain_count == valley_count"
+        else: # 奇数本
+            if abs(mountain_count - valley_count) != 1:
+                error_condition = "abs(mountain_count - valley_count) == 1"
 
-        alpha_prev = sector_angles[alpha_prev_idx]
-        alpha_next = sector_angles[alpha_next_idx]
-
-        # 条件: α_prev > α_s AND α_next > α_s
-        # 浮動小数点数なので (a > b) は (a - b >= EPSILON) で判定
-        if (alpha_prev - alpha_s >= EPSILON) and (alpha_next - alpha_s >= EPSILON):
-            # --- ステップ4: 補題の規則検証 ---
-            
-            # 1. 折り線本数の計数
-            # k個の角度シーケンスは、k+1本の折り線で形成される
-            edge_count = len(sequence_indices) + 1
-            
-            # 2. 山・谷の計数
-            # 該当する k+1 本の折り線は、シーケンスの開始インデックス(i)から
-            # 終了インデックス(j)の *次* まで
-            mountain_count = 0
-            valley_count = 0
-            
-            edge_sub_indices = []
-            curr = i
-            while True:
-                edge_sub_indices.append(curr)
-                if curr == alpha_next_idx: break # シーケンスを形成する最後のエッジ
-                curr = (curr + 1) % num_edges
-
-            # 実際のM/Vカウント
-            for edge_idx in edge_sub_indices:
-                assignment = ordered_half_edges[edge_idx].assignment
-                if assignment == "M":
-                    mountain_count += 1
-                elif assignment == "V":
-                    valley_count += 1
-
-            # 3. 規則判定
-            error = None
-            if edge_count % 2 == 0: # 偶数本
-                if mountain_count != valley_count:
-                    error = "mountain_count == valley_count"
-            else: # 奇数本
-                if abs(mountain_count - valley_count) != 1:
-                    error = "abs(mountain_count - valley_count) == 1"
-            
-            if error:
-                # 違反が検出された
-                return {
-                    "type": "GeneralizedBigLittleBigLemma",
-                    "vertex": vertex_index,
-                    "message": f"Vertex {vertex_index}: " + (
-                        f"An even-edge ({edge_count}) equal-angle sequence does not have the same number of mountains and valleys."
-                        if edge_count % 2 == 0 else
-                        f"An odd-edge ({edge_count}) equal-angle sequence does not have a mountain/valley count difference of 1."
-                    ),
-                    "context": {
-                        "violating_sequence": [math.degrees(alpha_s)] * len(sequence_indices),
-                        "edge_count": edge_count,
-                        "mountain_count": mountain_count,
-                        "valley_count": valley_count,
-                        "expected_condition": error
-                    }
+        if error_condition:
+            return {
+                "type": "GeneralizedBigLittleBigLemma",
+                "vertex": vertex_index,
+                "message": f"Vertex {vertex_index}: " + (
+                    f"An even-edge ({edge_count}) equal-angle sequence does not have the same number of mountains and valleys."
+                    if edge_count % 2 == 0 else
+                    f"An odd-edge ({edge_count}) equal-angle sequence does not have a mountain/valley count difference of 1."
+                ),
+                "context": {
+                    "violating_sequence_angle_deg": math.degrees(alpha_s),
+                    "sequence_length_in_angles": seq_length,
+                    "edge_count": edge_count,
+                    "mountain_count": mountain_count,
+                    "valley_count": valley_count,
+                    "expected_condition": error_condition
                 }
-        
-        # 次の探索開始位置へ
-        if j < i: # 1周した場合
-            break
-        i = j + 1
+            }
+            
+    return None
 
-    # ステップ5: 最終判定
-    return None # 全てのシーケンスが規則を満たした
 
+def check_generalized_blb_lemma(ordered_half_edges, vertex_index):
+    """
+    一般化された大小大の補題（Generalized Big-Little-Big Lemma）を検証する。(安全な実装)
+    """
+    num_edges = len(ordered_half_edges)
+    if num_edges < 3:
+        return None
+
+    # M/V以外の割り当てが含まれる場合はチェック対象外
+    if any(he.assignment not in ["M", "V"] for he in ordered_half_edges):
+        return None
+
+    sector_angles = [he.sector_angle for he in ordered_half_edges]
+    
+    # 全ての等角シーケンスを事前に特定
+    equal_sequences = find_equal_angle_sequences(sector_angles)
+    
+    for seq_start, seq_length in equal_sequences:
+        # 各シーケンスに対して補題を適用
+        error = validate_blb_sequence(ordered_half_edges, vertex_index, seq_start, seq_length)
+        if error:
+            return error # 最初の違反が見つかった時点でエラーを返す
+    
+    return None # 全てのシーケンスがルールを満たした
 
 def validate_fold_file(file_path):
     """
-    .foldファイルを読み込み、平坦折り畳み可能性のルールを検証する (修正版)
+    .foldファイルを読み込み、平坦折り畳み可能性のルールを検証する (最終版)
     """
     try:
         with open(file_path, 'r') as f:
@@ -621,18 +451,13 @@ def validate_fold_file(file_path):
         
         sector_angles_rad = [he.sector_angle for he in ordered_half_edges]
         level1_errors.append(check_kawasaki_theorem(sector_angles_rad, i))
-        level1_errors.append(check_big_little_big_theorem(ordered_half_edges, i))
+        level1_errors.append(check_big_little_big_theorem(ordered_half_edges, i)) # <- この行を修正
         level1_errors.append(check_generalized_blb_lemma(ordered_half_edges, i))
         
         level1_errors = [e for e in level1_errors if e is not None]
         if level1_errors:
             errors.extend(level1_errors)
-            continue # レベル1でエラーがあれば、レベル2は実行しない
-
-        # --- レベル2: 内点向けの十分条件チェック (修正版を使用) ---
-        error = check_folding_simulation_fixed(ordered_half_edges, i)
-        if error:
-            errors.append(error)
+            continue # レベル1でエラーがあれば、レベル2（仮）は実行しない
 
     if errors:
         return {"valid": False, "errors": errors}
@@ -640,9 +465,11 @@ def validate_fold_file(file_path):
     return {"valid": True, "errors": []}
 
 
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: python validator.py <path_to_fold_file>")
+        print("Usage: python validator_v4.py <path_to_fold_file>")
         sys.exit(1)
         
     file_path = sys.argv[1]
