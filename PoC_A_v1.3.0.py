@@ -63,8 +63,12 @@ class OrigamiDataset(InMemoryDataset):
             with open(path, 'r') as f:
                 fold_data = json.load(f)
 
-            # 1. Node features (x): vertex coordinates
+            # Extract data first before debug prints
             vertices_coords = fold_data['vertices_coords']
+            edges_vertices = fold_data['edges_vertices']
+            edges_assignment = fold_data['edges_assignment']
+
+            # 1. Node features (x): vertex coordinates
             if isinstance(vertices_coords[0], list):
                 # Already in [[x1, y1], [x2, y2], ...] format
                 x = torch.tensor(vertices_coords, dtype=torch.float)
@@ -91,9 +95,6 @@ class OrigamiDataset(InMemoryDataset):
             source_nodes = []
             target_nodes = []
             edge_attrs = []
-
-            edges_vertices = fold_data['edges_vertices']
-            edges_assignment = fold_data['edges_assignment']
 
             for i, edge in enumerate(edges_vertices):
                 # .fold is 1-based, convert to 0-based
