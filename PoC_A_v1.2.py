@@ -30,7 +30,8 @@ class Config:
 
 # --- 2. Component 1: OrigamiDatasetLoader ---
 class OrigamiDataset(InMemoryDataset):
-    def __init__(self, root, transform=None, pre_transform=None):
+    def __init__(self, root, transform=None, pre_transform=None, force_reload=False):
+        self.force_reload = force_reload
         super().__init__(root, transform, pre_transform)
         # Fix: Use weights_only=False for torch_geometric data
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
@@ -74,6 +75,17 @@ class OrigamiDataset(InMemoryDataset):
             
             num_nodes = x.size(0)
             print(f"Processing {filename}: {num_nodes} nodes")
+            
+            # Debug: Check data structure
+            print(f"  - vertices_coords type: {type(vertices_coords)}, length: {len(vertices_coords)}")
+            if len(vertices_coords) > 0:
+                print(f"  - first vertex: {vertices_coords[0]}")
+            print(f"  - edges_vertices length: {len(edges_vertices)}")
+            if len(edges_vertices) > 0:
+                print(f"  - first edge: {edges_vertices[0]}, type: {type(edges_vertices[0])}")
+            print(f"  - edges_assignment length: {len(edges_assignment)}")
+            if len(edges_assignment) > 0:
+                print(f"  - first assignment: {edges_assignment[0]}")
 
             # 2. Edge connectivity (edge_index) and edge attributes (edge_attr)
             source_nodes = []
@@ -120,6 +132,18 @@ class OrigamiDataset(InMemoryDataset):
 
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
+
+    def _download(self):
+        # Override to handle force_reload
+        if self.force_reload and os.path.exists(self.processed_paths[0]):
+            os.remove(self.processed_paths[0])
+        super()._download()
+
+    def _process(self):
+        # Override to handle force_reload
+        if self.force_reload and os.path.exists(self.processed_paths[0]):
+            os.remove(self.processed_paths[0])
+        super()._process()
 
 # --- 3. Component 2: GNNAutoencoder Model ---
 class GNNAutoencoder(torch.nn.Module):
@@ -218,7 +242,12 @@ def main():
     # For PoC, use the same dataset for training and validation
     # A proper implementation would split this.
     print(f"Loading dataset from {config.DATA_DIR}...")
-    # Force reprocessing to ensure our fixes are applied
+    # Ensure fresh processing by removing processed data first
+    processed_path = os.path.join(config.DATA_DIR, 'processed', 'data.pt')
+    if os.path.exists(processed_path):
+        print("Removing existing processed data to ensure fresh processing...")
+        os.remove(processed_path)
+    
     dataset = OrigamiDataset(root=config.DATA_DIR, force_reload=True)
     
     # Check if dataset is empty
