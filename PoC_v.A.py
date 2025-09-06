@@ -1,0 +1,237 @@
+import os
+import json
+import torch
+import torch.nn.functional as F
+from torch.optim import Adam
+from tqdm import tqdm
+
+from torch_geometric.data import InMemoryDataset, Data
+from torch_geometric.loader import DataLoader
+from torch_geometric.nn import GATConv
+
+# --- 1. Configuration ---
+class Config:
+    # Data parameters
+    DATA_DIR = "data" # Root directory for data
+    
+    # Model hyperparameters
+    HIDDEN_DIM = 64
+    LATENT_DIM = 32
+    GAT_HEADS = 4
+    
+    # Training parameters
+    EPOCHS = 200
+    BATCH_SIZE = 8 # Adjust based on dataset size and memory
+    LEARNING_RATE = 0.005
+    
+    # Loss weights
+    LAMBDA_RECON = 1.0 # Weight for vertex coordinate reconstruction loss
+    LAMBDA_CLASS = 1.0 # Weight for edge type classification loss
+
+# --- 2. Component 1: OrigamiDatasetLoader ---
+class OrigamiDataset(InMemoryDataset):
+    def __init__(self, root, transform=None, pre_transform=None):
+        super().__init__(root, transform, pre_transform)
+        self.data, self.slices = torch.load(self.processed_paths[0])
+
+    @property
+    def raw_file_names(self):
+        # Expects .fold files to be in data/raw
+        raw_dir = os.path.join(self.root, 'raw')
+        return [f for f in os.listdir(raw_dir) if f.endswith('.fold')]
+
+    @property
+    def processed_file_names(self):
+        return ['data.pt']
+
+    def download(self):
+        # No download needed, files are provided locally
+        pass
+
+    def process(self):
+        data_list = []
+        # This mapping should cover all edge types in the dataset
+        edge_type_mapping = {"B": 0, "M": 1, "V": 2, "F": 3, "U": 4}
+        
+        for filename in self.raw_file_names:
+            path = os.path.join(self.raw_dir, filename)
+            
+            with open(path, 'r') as f:
+                fold_data = json.load(f)
+
+            # 1. Node features (x): vertex coordinates
+            vertices_coords = torch.tensor(fold_data['vertices_coords'], dtype=torch.float)
+            if vertices_coords.dim() == 1: # Handle flat list case
+                num_vertices = len(fold_data['vertices_coords']) // 2
+                x = vertices_coords.view(num_vertices, 2)
+            else:
+                x = vertices_coords
+
+            # 2. Edge connectivity (edge_index) and edge attributes (edge_attr)
+            source_nodes = []
+            target_nodes = []
+            edge_attrs = []
+
+            edges_vertices = fold_data['edges_vertices']
+            edges_assignment = fold_data['edges_assignment']
+
+            for i, edge in enumerate(edges_vertices):
+                # .fold is 1-based, convert to 0-based
+                u, v = edge[0] - 1, edge[1] - 1
+                
+                # Add edges for undirected graph
+                source_nodes.extend([u, v])
+                target_nodes.extend([v, u])
+
+                assignment = edges_assignment[i]
+                edge_type = edge_type_mapping.get(assignment, 4) # Default to 'U'
+                
+                # Add same attribute for both directions
+                edge_attrs.extend([edge_type, edge_type])
+
+            edge_index = torch.tensor([source_nodes, target_nodes], dtype=torch.long)
+            # Edge attributes are the labels for classification, must be Long
+            edge_attr = torch.tensor(edge_attrs, dtype=torch.long)
+            
+            graph_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+            data_list.append(graph_data)
+
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])
+
+# --- 3. Component 2: GNNAutoencoder Model ---
+class GNNAutoencoder(torch.nn.Module):
+    def __init__(self, node_feat_dim, hidden_dim, latent_dim, num_edge_classes, heads=4):
+        super().__init__()
+        
+        # Encoder
+        self.conv1 = GATConv(node_feat_dim, hidden_dim, heads=heads)
+        self.conv2 = GATConv(hidden_dim * heads, latent_dim, heads=1)
+
+        # Decoder
+        self.decode_nodes = torch.nn.Linear(latent_dim, node_feat_dim)
+        
+        self.decode_edges = torch.nn.Sequential(
+            torch.nn.Linear(latent_dim * 2, hidden_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(hidden_dim, num_edge_classes)
+        )
+
+    def encode(self, x, edge_index):
+        x = F.relu(self.conv1(x, edge_index))
+        z = self.conv2(x, edge_index)
+        return z
+
+    def decode(self, z, edge_index):
+        recon_x = self.decode_nodes(z)
+        
+        edge_z = torch.cat([z[edge_index[0]], z[edge_index[1]]], dim=-1)
+        recon_edge_logits = self.decode_edges(edge_z)
+        
+        return recon_x, recon_edge_logits
+
+    def forward(self, data):
+        z = self.encode(data.x, data.edge_index)
+        recon_x, recon_edge_logits = self.decode(z, data.edge_index)
+        return recon_x, recon_edge_logits
+
+# --- 4. Component 3 & 4: Training and Evaluation Pipeline ---
+def train_one_epoch(model, loader, optimizer, config):
+    model.train()
+    total_loss, total_recon_loss, total_class_loss = 0, 0, 0
+    
+    for data in loader:
+        optimizer.zero_grad()
+        
+        recon_x, recon_edge_logits = model(data)
+        
+        # Loss Calculation (Component 3)
+        loss_recon = F.mse_loss(recon_x, data.x)
+        loss_class = F.cross_entropy(recon_edge_logits, data.edge_attr)
+        
+        loss = config.LAMBDA_RECON * loss_recon + config.LAMBDA_CLASS * loss_class
+        
+        loss.backward()
+        optimizer.step()
+        
+        total_loss += loss.item() * data.num_graphs
+        total_recon_loss += loss_recon.item() * data.num_graphs
+        total_class_loss += loss_class.item() * data.num_graphs
+        
+    num_total_graphs = len(loader.dataset)
+    return total_loss / num_total_graphs, total_recon_loss / num_total_graphs, total_class_loss / num_total_graphs
+
+@torch.no_grad()
+def evaluate(model, loader, config):
+    model.eval()
+    total_loss, total_recon_loss, total_class_loss = 0, 0, 0
+    correct_edges = 0
+    total_edges = 0
+
+    for data in loader:
+        recon_x, recon_edge_logits = model(data)
+        
+        loss_recon = F.mse_loss(recon_x, data.x)
+        loss_class = F.cross_entropy(recon_edge_logits, data.edge_attr)
+        
+        loss = config.LAMBDA_RECON * loss_recon + config.LAMBDA_CLASS * loss_class
+        
+        total_loss += loss.item() * data.num_graphs
+        total_recon_loss += loss_recon.item() * data.num_graphs
+        total_class_loss += loss_class.item() * data.num_graphs
+        
+        pred = recon_edge_logits.argmax(dim=-1)
+        correct_edges += (pred == data.edge_attr).sum().item()
+        total_edges += data.edge_attr.size(0)
+
+    num_total_graphs = len(loader.dataset)
+    edge_accuracy = correct_edges / total_edges
+    return total_loss / num_total_graphs, total_recon_loss / num_total_graphs, total_class_loss / num_total_graphs, edge_accuracy
+
+def main():
+    print("--- Starting Baseline GNN Autoencoder Training ---")
+    config = Config()
+    
+    # Setup dataset and dataloader
+    # For PoC, use the same dataset for training and validation
+    # A proper implementation would split this.
+    print(f"Loading dataset from {config.DATA_DIR}...")
+    dataset = OrigamiDataset(root=config.DATA_DIR)
+    # Simple 80/20 split for train/validation
+    train_size = int(0.8 * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+    
+    train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=config.BATCH_SIZE, shuffle=False)
+    print(f"Dataset loaded: {len(dataset)} graphs ({train_size} train, {val_size} val).")
+
+    # Setup model and optimizer
+    # Assuming the number of edge classes is the max value in the mapping + 1
+    num_edge_classes = 5 
+    model = GNNAutoencoder(
+        node_feat_dim=dataset.num_node_features,
+        hidden_dim=config.HIDDEN_DIM,
+        latent_dim=config.LATENT_DIM,
+        num_edge_classes=num_edge_classes,
+        heads=config.GAT_HEADS
+    )
+    optimizer = Adam(model.parameters(), lr=config.LEARNING_RATE)
+    
+    print(f"Model initialized:\n{model}")
+    print(f"Starting training for {config.EPOCHS} epochs...")
+
+    # Training loop
+    for epoch in range(1, config.EPOCHS + 1):
+        train_loss, train_recon, train_class = train_one_epoch(model, train_loader, optimizer, config)
+        val_loss, val_recon, val_class, val_acc = evaluate(model, val_loader, config)
+        
+        print(f'Epoch: {epoch:03d}, '
+              f'Train Loss: {train_loss:.4f} (Recon: {train_recon:.4f}, Class: {train_class:.4f}), '
+              f'Val Loss: {val_loss:.4f} (Recon: {val_recon:.4f}, Class: {val_class:.4f}), '
+              f'Val Edge Acc: {val_acc:.4f}')
+
+    print("--- Training Finished ---")
+
+if __name__ == '__main__':
+    main()
