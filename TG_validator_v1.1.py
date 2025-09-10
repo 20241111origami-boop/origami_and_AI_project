@@ -143,48 +143,6 @@ def check_boundary_edges_on_frame(vertices_coords, edges_vertices, edges_assignm
                 })
     
     return errors if errors else None
-def check_boundary_edges_on_frame(vertices_coords, edges_vertices, edges_assignment, x_range=(-200, 200), y_range=(-200, 200)):
-    """
-    境界線("B")が、指定された矩形領域の枠線と完全に一致する
-    水平線または垂直線であることを検証する（シナリオB: 厳格ルール）。
-    """
-    errors = []
-    x_max = max(abs(x_range[0]), abs(x_range[1]))
-    y_max = max(abs(y_range[0]), abs(y_range[1]))
-
-    for i, assignment in enumerate(edges_assignment):
-        if assignment == "B":
-            v1_idx, v2_idx = edges_vertices[i]
-            x1, y1 = vertices_coords[v1_idx]
-            x2, y2 = vertices_coords[v2_idx]
-
-            # 条件1: 垂直な枠線か？
-            is_vertical_frame_edge = (
-                math.isclose(x1, x2, rel_tol=EPSILON, abs_tol=EPSILON) and
-                math.isclose(abs(x1), x_max, rel_tol=EPSILON, abs_tol=EPSILON)
-            )
-
-            # 条件2: 水平な枠線か？
-            is_horizontal_frame_edge = (
-                math.isclose(y1, y2, rel_tol=EPSILON, abs_tol=EPSILON) and
-                math.isclose(abs(y1), y_max, rel_tol=EPSILON, abs_tol=EPSILON)
-            )
-
-            # どちらの条件も満たさない場合はエラー
-            if not (is_vertical_frame_edge or is_horizontal_frame_edge):
-                errors.append({
-                    "type": "BoundaryEdgeNotOnFrame",
-                    "message": f"Boundary edge {i} ({v1_idx}-{v2_idx}) is not a valid horizontal or vertical segment on the frame.",
-                    "context": {
-                        "edge_index": i,
-                        "vertex_indices": [v1_idx, v2_idx],
-                        "coords": [[x1, y1], [x2, y2]],
-                        "expected_frame": f"A vertical line on x=±{x_max} or a horizontal line on y=±{y_max}"
-                    }
-                })
-    
-    return errors if errors else None
-
 
 def check_vertices_within_boundary(vertices_coords, x_range=(-200, 200), y_range=(-200, 200)):
     """
